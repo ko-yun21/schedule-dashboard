@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>記事スケジュール管理ダッシュボード</title>
+<style>
+:root {
+  --primary: #5B4FD9;
+  --primary-light: #EEF2FF;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --border: #E5E7EB;
+  --text: #111827;
+  --text-sub: #6B7280;
+  --bg: #F3F4F6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Hiragino Sans', 'YuGothic', 'Yu Gothic UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+/* Header */
+.header { background: var(--primary); color: white; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+.header-title { font-size: 18px; font-weight: 800; letter-spacing: 0.3px; }
+.header-date { font-size: 13px; opacity: 0.85; }
+
+/* Client bar */
+.client-bar { background: #1E1B4B; display: flex; align-items: center; padding: 0 24px; gap: 4px; }
+.client-bar-label { font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 700; margin-right: 8px; letter-spacing: 0.5px; white-space: nowrap; }
+.client-btn { padding: 10px 20px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; color: rgba(255,255,255,0.55); background: transparent; border-bottom: 3px solid transparent; margin-bottom: 0; transition: all 0.15s; font-family: inherit; letter-spacing: 0.2px; }
+.client-btn:hover { color: white; background: rgba(255,255,255,0.07); }
+.client-btn.active { color: white; border-bottom-color: white; background: rgba(255,255,255,0.1); }
+
+/* Tabs */
+.tabs { background: white; border-bottom: 2px solid var(--border); padding: 0 24px; display: flex; }
+.tab { padding: 11px 18px; cursor: pointer; font-size: 13px; font-weight: 600; border-bottom: 3px solid transparent; margin-bottom: -2px; color: var(--text-sub); transition: all 0.15s; }
+.tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+.tab:hover:not(.active) { color: var(--text); }
+
+/* Layout */
+.content { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* Cards */
+.card { background: white; border-radius: 12px; padding: 18px 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.card-title { font-size: 14px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+
+/* Summary row */
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.summary-box { background: white; border-radius: 10px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); text-align: center; }
+.summary-num { font-size: 28px; font-weight: 800; }
+.summary-label { font-size: 11px; color: var(--text-sub); margin-top: 3px; }
+.num-red { color: var(--danger); }
+.num-yellow { color: var(--warning); }
+.num-green { color: var(--success); }
+.num-blue { color: var(--primary); }
+
+/* Alert */
+.alert { padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; display: flex; align-items: flex-start; gap: 8px; }
+.alert-danger { background: #FEF2F2; border-left: 3px solid var(--danger); }
+.alert-warning { background: #FFFBEB; border-left: 3px solid var(--warning); }
+.alert-success { background: #ECFDF5; border-left: 3px solid var(--success); }
+.alert-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+.alert strong { display: block; margin-bottom: 2px; }
+
+/* Article list */
+.article-item { display: flex; align-items: center; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; background: #F9FAFB; border: 1px solid var(--border); gap: 10px; transition: background 0.1s; }
+.article-item:hover { background: #F3F4F6; }
+.art-num { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; color: white; flex-shrink: 0; }
+.c1 { background: #3B82F6; }
+.c2 { background: #10B981; }
+.c3 { background: #F59E0B; }
+.c4 { background: #EF4444; }
+.art-title { flex: 1; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.art-cool { font-size: 11px; color: white; padding: 1px 7px; border-radius: 10px; flex-shrink: 0; font-weight: 700; }
+.art-step { flex-shrink: 0; text-align: right; min-width: 130px; }
+.art-step-name { font-size: 12px; font-weight: 700; }
+.art-step-date { font-size: 11px; color: var(--text-sub); }
+.art-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+.badge-done { background: #D1FAE5; color: #065F46; }
+.badge-active { background: #FEF3C7; color: #92400E; }
+.badge-overdue { background: #FEE2E2; color: #991B1B; }
+.badge-soon { background: #DBEAFE; color: #1E40AF; }
+.badge-pending { background: #F3F4F6; color: var(--text-sub); }
+
+/* Progress dots */
+.step-dots { display: flex; gap: 2px; margin-top: 5px; flex-wrap: wrap; }
+.dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dot-done { background: var(--success); }
+.dot-active { background: var(--warning); }
+.dot-pending { background: #D1D5DB; }
+.dot-d { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+/* Gantt */
+.gantt-wrap { overflow-x: auto; border-radius: 8px; }
+.gantt { border-collapse: collapse; min-width: 900px; width: 100%; }
+.gantt th { padding: 6px 8px; font-size: 11px; color: var(--text-sub); background: #F9FAFB; border-bottom: 1px solid var(--border); white-space: nowrap; font-weight: 600; }
+.gantt td { padding: 5px 8px; border-bottom: 1px solid #F0F0F0; vertical-align: middle; }
+.gantt tr:last-child td { border-bottom: none; }
+.gantt-label { min-width: 200px; max-width: 200px; font-size: 12px; }
+.gantt-label-inner { display: flex; align-items: center; gap: 6px; }
+.gantt-timeline { position: relative; height: 32px; }
+.g-bar { position: absolute; top: 6px; height: 20px; border-radius: 4px; display: flex; align-items: center; padding: 0 6px; font-size: 10px; font-weight: 600; color: white; overflow: hidden; white-space: nowrap; opacity: 0.9; }
+.g-today { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--danger); z-index: 5; }
+.g-today-label { position: absolute; top: -16px; left: -12px; font-size: 9px; color: var(--danger); font-weight: 700; white-space: nowrap; }
+.g-step-marker { position: absolute; top: 4px; width: 8px; height: 24px; border-radius: 2px; z-index: 4; opacity: 0.8; transform: translateX(-4px); cursor: pointer; }
+.g-step-done { background: var(--success); }
+.g-step-active { background: var(--warning); }
+.g-step-d-active { background: var(--primary); }
+.g-step-d-pending { background: #A78BFA; opacity: 0.5; }
+.g-step-pending { background: #D1D5DB; }
+
+/* Date headers in gantt */
+.date-header { display: flex; justify-content: space-between; padding: 4px 0 4px 202px; font-size: 10px; color: var(--text-sub); }
+
+/* Form */
+.form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-label { font-size: 11px; font-weight: 700; color: var(--text-sub); }
+input, select { padding: 7px 10px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; outline: none; font-family: inherit; }
+input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(91,79,217,0.1); }
+.btn { padding: 7px 16px; border-radius: 7px; border: none; cursor: pointer; font-size: 13px; font-weight: 700; transition: all 0.15s; font-family: inherit; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: #4F43C0; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-sm { padding: 4px 10px; font-size: 11px; }
+.btn-outline { background: white; color: var(--text-sub); border: 1px solid var(--border); }
+.btn-outline:hover { background: #F9FAFB; }
+
+/* Settings table */
+.settings-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.settings-table th { background: #F9FAFB; padding: 7px 10px; border: 1px solid var(--border); font-weight: 700; color: var(--text-sub); white-space: nowrap; }
+.settings-table td { padding: 5px 8px; border: 1px solid var(--border); }
+.settings-table input[type="date"] { padding: 3px 6px; font-size: 12px; width: 130px; }
+.d-charge-row { background: #F5F3FF; }
+
+.empty { text-align: center; padding: 32px; color: var(--text-sub); }
+[contenteditable][data-placeholder]:empty::before { content: attr(data-placeholder); color: #9CA3AF; pointer-events: none; }
+.tag-cool { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 8px; color: white; }
+
+/* Manage article table */
+.article-table { width: 100%; border-collapse: collapse; }
+.article-table th { background: #F9FAFB; padding: 8px 10px; border: 1px solid var(--border); font-size: 12px; font-weight: 700; color: var(--text-sub); text-align: left; }
+.article-table td { padding: 7px 10px; border: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+.article-table tr:nth-child(even) td { background: #FAFAFA; }
+
+/* Tooltip */
+[data-tip] { cursor: help; position: relative; }
+[data-tip]:hover::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: #1F2937; color: white; padding: 4px 8px; border-radius: 6px; font-size: 11px; white-space: nowrap; z-index: 99; pointer-events: none; }
+
+.section-label { font-size: 12px; font-weight: 700; color: var(--text-sub); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<div id="loadingOverlay" style="display:flex; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.92); z-index:9999; flex-direction:column; align-items:center; justify-content:center; gap:12px;">
+  <div style="font-size:36px;">☁️</div>
+  <div style="font-size:16px; font-weight:700; color:#5B4FD9;">データを読み込んでいます...</div>
+  <div style="font-size:12px; color:#9CA3AF;">Supabaseに接続中</div>
+</div>
+
+<div class="header">
+  <div class="header-title">📋 記事スケジュール管理</div>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <div class="header-date" id="todayLabel"></div>
+    <button onclick="resetClientData()" style="font-size:11px; padding:3px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.4); background:rgba(255,255,255,0.15); color:white; cursor:pointer;">🔄 データリセット</button>
+  </div>
+</div>
+
+<div class="client-bar" id="clientBar">
+  <span class="client-bar-label">案件：</span>
+  <button class="client-btn active" data-key="grape"     onclick="switchClient('grape')">🍇 grape様</button>
+  <button class="client-btn"        data-key="breik"     onclick="switchClient('breik')">⚡ ブレイク様</button>
+  <button class="client-btn"        data-key="boundary"  onclick="switchClient('boundary')">🔵 バウンダリ様</button>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('dashboard')">🏠 ダッシュボード</div>
+  <div class="tab" onclick="showTab('gantt')">📊 ガントチャート</div>
+  <div class="tab" onclick="showTab('manage')">📝 記事管理</div>
+  <div class="tab" onclick="showTab('settings')">⚙️ スケジュール設定</div>
+</div>
+
+<div class="content">
+
+  <!-- ダッシュボード -->
+  <div class="tab-panel active" id="tab-dashboard">
+    <div id="clientMemoArea"></div>
+    <div class="summary-grid" id="summaryGrid"></div>
+    <div id="alerts"></div>
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between;">
+        <span>📌 担当記事の現在ステータス</span>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-outline btn-sm" id="doneToggle" onclick="toggleHideDone()" style="font-size:12px; padding:4px 12px;">
+            ✅ 完了を隠す中
+          </button>
+          <button class="btn btn-outline btn-sm" id="filterToggle" onclick="toggleDFilter()" style="font-size:12px; padding:4px 12px;">
+            📋 全工程表示
+          </button>
+        </div>
+      </div>
+      <div id="articleStatusList"></div>
+    </div>
+  </div>
+
+  <!-- ガントチャート -->
+  <div class="tab-panel" id="tab-gantt">
+    <div class="card">
+      <div class="card-title">📊 タイムライン</div>
+      <div style="font-size:11px; color:var(--text-sub); margin-bottom:10px; display:flex; gap:16px; flex-wrap:wrap;">
+        <span><span style="display:inline-block;width:10px;height:10px;background:var(--success);border-radius:50%;margin-right:4px;"></span>完了工程</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:var(--warning);border-radius:50%;margin-right:4px;"></span>現在の工程</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:var(--primary);border-radius:50%;margin-right:4px;"></span>今後のD担当工程</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:#D1D5DB;border-radius:50%;margin-right:4px;"></span>今後の工程</span>
+        <span><span style="display:inline-block;width:10px;height:2px;background:var(--danger);margin-right:4px;vertical-align:middle;"></span>今日</span>
+      </div>
+      <div class="gantt-wrap" id="ganttWrap"></div>
+    </div>
+  </div>
+
+  <!-- 記事管理 -->
+  <div class="tab-panel" id="tab-manage">
+    <div class="card">
+      <div class="card-title">➕ 記事を追加</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">記事No</label>
+          <input type="number" id="newNo" placeholder="例: 15" style="width:80px;">
+        </div>
+        <div class="form-group" style="flex:1; min-width:200px;">
+          <label class="form-label">タイトル</label>
+          <input type="text" id="newTitle" placeholder="記事タイトルを入力">
+        </div>
+        <div class="form-group">
+          <label class="form-label">クール</label>
+          <select id="newCool">
+            <option value="1">① No1〜10</option>
+            <option value="2">② No11〜20</option>
+            <option value="3">③ No21〜30</option>
+            <option value="4">④ No31〜40</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">担当D</label>
+          <input type="text" id="newTantou" placeholder="例: 金澤" style="width:80px;" value="金澤">
+        </div>
+        <div class="form-group">
+          <label class="form-label">担当ライター</label>
+          <input type="text" id="newWriter" placeholder="例: 佐川" style="width:80px;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">校正者</label>
+          <input type="text" id="newKosei" placeholder="例: 池山" style="width:80px;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">月</label>
+          <select id="newMonth" style="width:80px;">
+            <option value="4">4月</option>
+            <option value="5">5月</option>
+            <option value="6">6月</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ステータス</label>
+          <select id="newStatus">
+            <option value="normal">通常</option>
+            <option value="done">完了</option>
+          </select>
+        </div>
+        <div class="form-group" style="justify-content:flex-end;">
+          <button class="btn btn-primary" onclick="addArticle()">追加</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 記事一覧</div>
+      <table class="article-table">
+        <thead>
+          <tr>
+            <th style="width:60px;">No</th>
+            <th>タイトル</th>
+            <th style="width:100px;">クール</th>
+            <th style="width:80px;">担当D</th>
+            <th style="width:80px;">ライター</th>
+            <th style="width:80px;">校正者</th>
+            <th>メモ（現況）</th>
+            <th style="width:80px;">ステータス</th>
+            <th style="width:60px;"></th>
+          </tr>
+        </thead>
+        <tbody id="articleTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 設定 -->
+  <div class="tab-panel" id="tab-settings">
+    <div class="card">
+      <div class="card-title">📅 クール別スケジュール設定</div>
+      <p style="font-size:12px; color:var(--text-sub); margin-bottom:14px;">
+        各クールの工程日程を変更できます。<span style="background:#F5F3FF; color:var(--primary); padding:1px 6px; border-radius:4px; font-weight:700;">紫色の行</span>がDさん担当工程です。
+      </p>
+      <div style="overflow-x:auto;">
+        <table class="settings-table" id="settingsTable"></table>
+      </div>
+      <div style="margin-top:12px;">
+        <button class="btn btn-primary" onclick="saveSettings()">💾 保存</button>
+        <button class="btn btn-outline" style="margin-left:8px;" onclick="resetSettings()">↩ リセット</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📤 データのエクスポート / インポート</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-outline" onclick="exportData()">📤 JSONエクスポート</button>
+        <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">📥 JSONインポート</button>
+        <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
+      </div>
+      <div style="margin-top:14px; background:#F0F9FF; border:1.5px solid #BAE6FD; border-radius:10px; padding:10px 14px; font-size:12px; color:#0369A1; position:relative; line-height:1.7;">
+        <div style="position:absolute; top:-9px; left:20px; width:0; height:0; border-left:8px solid transparent; border-right:8px solid transparent; border-bottom:9px solid #BAE6FD;"></div>
+        <div style="position:absolute; top:-7px; left:21px; width:0; height:0; border-left:7px solid transparent; border-right:7px solid transparent; border-bottom:8px solid #F0F9FF;"></div>
+        💡 <strong>Claudeにチェック内容を反映してもらうには？</strong><br>
+        ① ブラウザでチェックを更新したら「📤 JSONエクスポート」を押す<br>
+        ② 保存されたファイルをClaudeのチャットにドラッグ＆ドロップ<br>
+        ③ Claudeが内容をHTMLに反映してくれます！
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// =============================================
+// CLIENTS DATA
+// =============================================
+
+const CLIENTS = {
+  'grape': {
+    name: 'grape様',
+    color: '#16A34A',
+    steps: [
+      { id: 1, name: '取材先・日時確定', short: '取材確定',    isDCharge: false, isRelated: true  },
+      { id: 2, name: '取材',             short: '取材',        isDCharge: false, isRelated: true  },
+      { id: 3, name: '初稿UP',           short: '初稿UP',      isDCharge: false, isRelated: true  },
+      { id: 4, name: 'Dチェック①',      short: 'Dチェック①',  isDCharge: true,  isRelated: true  },
+      { id: 5, name: '納品前Dチェック',  short: '納品前D',     isDCharge: true,  isRelated: true  },
+      { id: 6, name: '納品',             short: '納品',        isDCharge: true,  isRelated: true  },
+    ],
+    defaultSchedule: {
+      1: ['2026-04-03','2026-04-10','2026-04-14','2026-04-17','2026-04-22','2026-04-22'],
+      2: ['2026-04-06','2026-04-13','2026-04-16','2026-04-19','2026-04-24','2026-04-24'],
+      3: ['2026-04-08','2026-04-15','2026-04-17','2026-04-21','2026-04-27','2026-04-27'],
+      4: ['2026-04-10','2026-04-17','2026-04-20','2026-04-23','2026-04-28','2026-04-28'],
+    },
+    coolLabel: (c) => ['','①週','②週','③週','④週'][c],
+    coolColor: (c) => ['','#3B82F6','#10B981','#F59E0B','#EF4444'][c],
+    defaultArticles: [
+      { id: 2,  title: '新生活のひとり暮らしで知っておきたい！誰でもできる「防犯対策法」', cool: 1, month: 4, tantouD: '金澤', writer: '大西', kosei: '池山', done: false, doneSteps: [0] },
+      { id: 8,  title: '引越し費用を抑えるなら「平日夕方」が狙い目？時間帯でどのくらい変わる？', cool: 1, month: 4, tantouD: '金澤', writer: '小川', kosei: '石黒', done: false, doneSteps: [0,1] },
+      { id: 9,  title: '冷蔵庫は壁から何センチ離して設置するのがベスト？放熱スペースで変わる節電効果', cool: 1, month: 4, tantouD: '金澤', writer: '小川', kosei: '勝矢', done: false, doneSteps: [0,1] },
+      { id: 10, title: '引越し後の冷蔵庫、すぐに電源を入れのはNG？電源を入れる推奨タイミングをメーカーに聞いてみた', cool: 1, month: 4, tantouD: '金澤', writer: '小川', kosei: '高田', done: false, doneSteps: [0,1] },
+      { id: 11, title: 'その節水対策、実は損してるかも？今日からできるトイレの節約＆お掃除術', cool: 2, month: 4, tantouD: '金澤', writer: '石澤', kosei: '池山', done: true },
+      { id: 13, title: 'そのままでは故障するかも？暖房器具の片付けでのNG行動とは？', cool: 2, month: 4, tantouD: '金澤', writer: '山本', kosei: '中村', done: false, doneSteps: [0,1] },
+      { id: 15, title: '春の衣替えでやりがち…服を守る"防虫剤"の正しい使い方', cool: 2, month: 4, tantouD: '金澤', writer: '小川', kosei: '高田', done: false, doneSteps: [0,1] },
+      { id: 17, title: 'キノコは冷凍した方が美味しくなる？旨味が増える保存方法とは', cool: 2, month: 4, tantouD: '金澤', writer: '冨田', kosei: '國安', done: false, doneSteps: [0,1] },
+      { id: 19, title: '引越し前に忘れがち…洗濯機の「水抜き」しないと追加料金？', cool: 2, month: 4, tantouD: '金澤', writer: '小川', kosei: '石黒', done: false, doneSteps: [0] },
+      { id: 22, title: 'エアコンの「試運転」は5月が鉄則？本番で故障を防ぐためのチェック項目', cool: 3, month: 4, tantouD: '金澤', writer: '石澤', kosei: '池山', done: false, doneSteps: [0,1,2,3,4,5], memo: '＜河野さん入稿中＞' },
+      { id: 24, title: 'プロ用（プレミア）と普通の殺虫剤、何が違う？◯◯◯に聞いてみた', cool: 3, month: 4, tantouD: '金澤', writer: '小川', kosei: '高田', done: false, doneSteps: [0] },
+      { id: 26, title: '引っ越しするなら"入居前"が効果的！「新居の害虫対策」と注意点', cool: 3, month: 4, tantouD: '金澤', writer: '小川', kosei: '國安', done: false, doneSteps: [0] },
+      { id: 28, title: 'カーテンを変えるだけで電気代の節約!?節電効果が高まるカーテンの選び方とは', cool: 3, month: 4, tantouD: '金澤', writer: '森本', kosei: '懸谷', done: true },
+      { id: 30, title: '憧れの"キャンピングカー"生活！1ヶ月夫婦2人での生活費はどのくらい？', cool: 3, month: 4, tantouD: '金澤', writer: '小川', kosei: '勝矢', done: false, doneSteps: [] },
+      { id: 32, title: '日傘の寿命は意外と短い？UVカット率が落ちるサインと買い替え時', cool: 4, month: 4, tantouD: '金澤', writer: '石澤', kosei: '安保', done: true },
+      { id: 34, title: '20年前のエアコン、壊れていなくても買い替えた方がいい？エアコンのお得な買い替えタイミングとは', cool: 4, month: 4, tantouD: '金澤', writer: '山本', kosei: '懸谷', done: false, doneSteps: [0,1] },
+      { id: 36, title: '入院で「個室」を希望した場合、「大部屋」との費用の違いはどのくらい？', cool: 4, month: 4, tantouD: '金澤', writer: '小川', kosei: '中村', done: false },
+      { id: 38, title: '"小銭"から"お札"への両替、お得にできる方法は？', cool: 4, month: 4, tantouD: '金澤', writer: '小川', kosei: '高田', done: true },
+      { id: 40, title: '役目を終えたランドセル。再利用やおすすめのリメイクを紹介！', cool: 4, month: 4, tantouD: '金澤', writer: '冨田', kosei: '國安', done: false },
+      { id: 42, title: '実は捨てると損⁉家庭ごみ〇選', cool: 4, month: 4, tantouD: '金澤', writer: '北村', kosei: '池山', done: false, doneSteps: [0,1] },
+      { id: 43, title: '今さら聞けない"白だし"と"めんつゆ"の違いって？', cool: 4, month: 4, tantouD: '金澤', writer: '小川', kosei: '高田', done: false },
+    ],
+  },
+  'boundary': {
+    name: 'バウンダリ様',
+    color: '#059669',
+    steps: [
+      { id: 1, name: '構成案チェック',      short: '構成案',    isDCharge: true,  isRelated: true, note: '構成案を確認する' },
+      { id: 2, name: '初稿チェック',        short: '初稿',      isDCharge: true,  isRelated: true, note: '初稿を確認する' },
+      { id: 3, name: '校正依頼',            short: '校正依頼',  isDCharge: true,  isRelated: true, note: '校正者へ依頼する' },
+      { id: 4, name: '校正後チェック',      short: '校正後',    isDCharge: true,  isRelated: true, note: '校正戻しを確認する' },
+      { id: 5, name: '納品',                short: '納品',      isDCharge: true,  isRelated: true, note: '先方への納品' },
+    ],
+    defaultSchedule: {
+      1: ['2026-04-20','2026-04-24','2026-04-24','2026-05-01','2026-05-01']
+    },
+    coolLabel: (c) => '記事',
+    coolColor: (c) => '#059669',
+    defaultArticles: [
+      { id: 3, title: 'ゴルフ場 ドローン', cool: 1, month: 5, tantouD: '金澤', writer: '佐川', kosei: '中村', done: false },
+      { id: 4, title: 'スポーツ ドローン', cool: 1, month: 5, tantouD: '金澤', writer: '大西', kosei: '中村', done: false },
+      { id: 5, title: 'ドローン国家資格費用', cool: 1, month: 5, tantouD: '金澤', writer: '大西', kosei: '中村', done: false },
+    ],
+  },
+  'breik': {
+    name: 'ブレイク様',
+    color: '#5B4FD9',
+    steps: [
+      { id: 1, name: '構成案チェック', short: '構成案',  isDCharge: true, isRelated: true,
+        note: '構成案を確認してライターに戻す日' },
+      { id: 2, name: '初稿チェック',   short: '初稿',    isDCharge: true, isRelated: true,
+        note: '初稿を確認する日' },
+      { id: 3, name: '校正依頼',       short: '校正依頼', isDCharge: true, isRelated: true,
+        note: '校正者へ依頼する日' },
+      { id: 4, name: '納品',           short: '納品',     isDCharge: true, isRelated: true,
+        note: '先方への納期' },
+    ],
+    defaultSchedule: {
+      1: ['2026-04-13', '2026-04-17', '2026-04-17', '2026-04-20'],
+      2: ['2026-04-20', '2026-04-23', '2026-04-23', '2026-04-27'],
+    },
+    coolLabel: (c) => c === 1 ? '4/20納品グループ' : '4/27納品グループ',
+    coolColor: (c) => c === 1 ? '#2563EB' : '#D97706',
+    defaultArticles: [
+      // 4/20納品グループ
+      { id: 46,  title: '私立高校無償化を利用しますが「立て替え払い」が必要と聞きました。授業料などにあたる部分は、直接振り込まれるわけではないのでしょうか？', cool: 1, month: 4, tantouD: '金澤', writer: '中村', done: false },
+      { id: 49,  title: '16歳の息子が電動キックボードで一時停止を無視して警察に止められた…！高校生でも「5000円」の罰金を払わなければならないの？', cool: 1, month: 4, tantouD: '金澤', writer: '鈴木', memo: '武井さん校正中・4/12戻り予定', doneSteps: [0, 1, 2], done: false },
+      { id: 52,  title: '1ヶ月の入院で母が「個室」を希望。費用は私が支払う予定ですが、「大部屋」との差額はどのくらいなんでしょうか？', cool: 1, month: 4, tantouD: '金澤', writer: '中村', done: false },
+      { id: 53,  title: '生活保護を受けている55歳の兄。老後このままでも「年金」は受給できるのでしょうか？', cool: 1, month: 4, tantouD: '金澤', writer: '中村', done: false },
+      { id: 70,  title: '毎日洗濯を「すすぎ2回」でしています。「1回」の場合と、水道代は1ヶ月でどれくらい変わりますか？', cool: 1, month: 4, tantouD: '金澤', writer: '中村', doneSteps: [0], done: false },
+      { id: 71,  title: '毎日弁当持参で頑張っていますが、これだけ食材が高騰するならコンビニ弁当の方がコスパがよかったりしますか…？', cool: 1, month: 4, tantouD: '金澤', writer: '中村', doneSteps: [0], done: false },
+      { id: 72,  title: '「節約のため」と月1万円でジム通いをする一人暮らしの息子。シャワーが会費に含まれているそうですが、自宅で入るのに比べ実際に1ヶ月でいくら節約になっていますか？', cool: 1, month: 4, tantouD: '金澤', writer: '中村', doneSteps: [0], done: false },
+      { id: 86,  title: '子どもの小学校入学祝いに、実家の両親から「100万円」の振り込みがありました。教育資金も含まれていますが、税金はかかるのでしょうか？', cool: 1, month: 4, tantouD: '金澤', writer: '中村', done: false },
+      { id: 112, title: '「税理士」と「社労士」、年収が高いのはどちら？ 仕事内容や資格取得までの期間についても解説', cool: 1, month: 4, tantouD: '金澤', writer: '永井', done: false },
+      { id: 114, title: '「医師」と「薬剤師」、年収の違いはどれくらい？専門医ごとに年収は違う？', cool: 1, month: 4, tantouD: '金澤', writer: '永井', done: false },
+      // 4/27納品グループ
+      { id: 55,  title: '姪の入学祝いで「10万円」渡したら、「あげすぎ」と友人から言われました。相場はいくらくらい？ 現金以外を贈るケースもあるのでしょうか？', cool: 2, month: 4, tantouD: '金澤', writer: '中村', done: false },
+      { id: 60,  title: '親戚からの大学入学祝い「10万円」は誰のもの？ 親が学費に充てるのは一般的なのでしょうか？', cool: 2, month: 4, tantouD: '金澤', writer: '中村', done: false },
+      { id: 73,  title: '花粉対策でほぼ毎日"浴室乾燥"を2時間使っています。1ヶ月の電気代はいくらかかっていますか？', cool: 2, month: 4, tantouD: '金澤', writer: '中村', done: false },
+      { id: 87,  title: 'この4月で「75歳」に。病院の窓口負担が「1割」から「2割」に上がる基準は何ですか？', cool: 2, month: 4, tantouD: '金澤', writer: '佐川', done: false },
+      { id: 92,  title: '【子ども・子育て支援金】独身会社員の私は毎月「700円」上乗せされるようです。「月500円程度」の負担と聞いていたのに、なぜでしょうか？', cool: 2, month: 4, tantouD: '金澤', writer: '佐川', done: false },
+      { id: 95,  title: '4月から一人暮らしを始めましたが、テレビはありません。「NHK」の契約は不要ですよね？', cool: 2, month: 4, tantouD: '金澤', writer: '中村', done: false },
+      { id: 98,  title: '30代・無職の息子と同居しています。年金暮らしなので養うのに困窮しています…。生活保護を受けさせた方がよいですか？', cool: 2, month: 4, tantouD: '金澤', writer: '中村', done: false },
+      { id: 116, title: '繁忙期を終えたばかりの「国税専門官」。年収はどのくらい？', cool: 2, month: 4, tantouD: '金澤', writer: '永井', done: false },
+      { id: 118, title: '薬剤師の娘が、薬局勤務か病院勤務かで迷っています。仕事内容や年収の違いはありますか？', cool: 2, month: 4, tantouD: '金澤', writer: '永井', done: false },
+      { id: 119, title: '娘の結婚相手は「大学病院の勤務医」だそうです。「開業医」と比べて年収はどのくらい違うのでしょうか？', cool: 2, month: 4, tantouD: '金澤', writer: '永井', done: false },
+    ],
+  },
+};
+
+// =============================================
+// STATE
+// =============================================
+
+let activeClientKey = 'grape';
+let clientData = {};
+let showOnlyD = false;
+let hideDone = true; // 完了記事は最初から非表示
+let activeFilter = null; // 'soon' | 'overdue' | 'done' | null
+
+const TODAY = new Date();
+TODAY.setHours(0,0,0,0);
+
+// Initialize client data
+Object.keys(CLIENTS).forEach(key => {
+  clientData[key] = {
+    schedule: JSON.parse(JSON.stringify(CLIENTS[key].defaultSchedule)),
+    articles: JSON.parse(JSON.stringify(CLIENTS[key].defaultArticles)),
+    memo: '',
+  };
+});
+
+// =============================================
+// LOCAL STORAGE
+// =============================================
+
+// =============================================
+// SUPABASE
+// =============================================
+
+const SUPABASE_URL = 'https://gezamozscnsvkwgzgomh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_mRjDnqvVrOOFC5i5s6g5tg_RQO28sc-';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function saveToCloud() {
+  // localStorage にもバックアップ
+  try { localStorage.setItem('scheduleData_v1', JSON.stringify(clientData)); } catch(e) {}
+  // Supabase に保存
+  try {
+    await sb.from('schedule_data').upsert({
+      key: 'all',
+      data: clientData,
+      updated_at: new Date().toISOString()
+    });
+  } catch(e) {
+    console.warn('クラウド保存エラー:', e);
+  }
+}
+
+async function loadFromCloud() {
+  // Supabase から読み込み
+  try {
+    const { data, error } = await sb.from('schedule_data').select('data').eq('key', 'all').single();
+    if (data && data.data) {
+      const parsed = data.data;
+      Object.keys(parsed).forEach(key => {
+        if (clientData[key]) {
+          if (parsed[key].articles) clientData[key].articles = parsed[key].articles;
+          if (parsed[key].schedule) clientData[key].schedule = parsed[key].schedule;
+          if (parsed[key].memo !== undefined) clientData[key].memo = parsed[key].memo;
+        }
+      });
+      return;
+    }
+  } catch(e) {
+    console.warn('クラウド読込エラー（ローカルにフォールバック）:', e);
+  }
+  // フォールバック: localStorage
+  try {
+    const saved = localStorage.getItem('scheduleData_v1');
+    if (!saved) return;
+    const parsed = JSON.parse(saved);
+    Object.keys(parsed).forEach(key => {
+      if (clientData[key]) {
+        if (parsed[key].articles) clientData[key].articles = parsed[key].articles;
+        if (parsed[key].schedule) clientData[key].schedule = parsed[key].schedule;
+        if (parsed[key].memo !== undefined) clientData[key].memo = parsed[key].memo;
+      }
+    });
+  } catch(e) {}
+}
+
+function resetClientData() {
+  if (!confirm(`「${getClient().name}」のデータをリセットしますか？\nブラウザで変更した内容が消えます。`)) return;
+  const existingMemo = clientData[activeClientKey].memo || '';
+  clientData[activeClientKey] = {
+    schedule: JSON.parse(JSON.stringify(getClient().defaultSchedule)),
+    articles: JSON.parse(JSON.stringify(getClient().defaultArticles)),
+    memo: existingMemo,
+  };
+  saveToCloud();
+  renderAll();
+}
+
+// =============================================
+// HELPER FUNCTIONS
+// =============================================
+
+function getClient() {
+  return CLIENTS[activeClientKey];
+}
+
+function getSchedule() {
+  return clientData[activeClientKey].schedule;
+}
+
+function getArticles() {
+  return clientData[activeClientKey].articles;
+}
+
+function todayStr() {
+  const y = TODAY.getFullYear();
+  const m = String(TODAY.getMonth()+1).padStart(2,'0');
+  const d = String(TODAY.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+
+function parseDate(s) {
+  const [y,m,d] = s.split('-').map(Number);
+  const dt = new Date(y,m-1,d);
+  dt.setHours(0,0,0,0);
+  return dt;
+}
+
+function fmtDate(s) {
+  const d = parseDate(s);
+  const mo = d.getMonth()+1;
+  const da = d.getDate();
+  const days = ['日','月','火','水','木','金','土'];
+  return `${mo}/${da}(${days[d.getDay()]})`;
+}
+
+// =============================================
+// LOGIC
+// =============================================
+
+function getCurrentStepIndex(cool) {
+  const today = TODAY;
+  const client = getClient();
+  const schedule = getSchedule();
+  const dates = schedule[cool];
+  if (!dates) return -1;
+
+  let current = -1;
+  for (let i = 0; i < dates.length; i++) {
+    if (parseDate(dates[i]) <= today) current = i;
+  }
+  return current;
+}
+
+function getArticleStatus(article) {
+  const client = getClient();
+  const schedule = getSchedule();
+
+  if (article.done) return { label: '完了', badge: 'badge-done', stepIdx: client.steps.length - 1 };
+
+  const today = TODAY;
+  const dates = schedule[article.cool];
+  if (!dates) return { label: '未着手', badge: 'badge-pending', stepIdx: 0 };
+
+  // 日付ベースで現在ステップを計算
+  let currentIdx = -1;
+  for (let i = 0; i < dates.length; i++) {
+    if (parseDate(dates[i]) <= today) currentIdx = i;
+  }
+
+  // 手動チェック済みステップがあれば、それも考慮（より進んでいる方を採用）
+  if (article.doneSteps && article.doneSteps.length > 0) {
+    const manualMax = Math.max(...article.doneSteps);
+    if (manualMax > currentIdx) currentIdx = manualMax;
+  }
+
+  if (currentIdx < 0) {
+    return { label: '未着手', badge: 'badge-pending', stepIdx: 0, stepName: client.steps[0].name, stepDate: dates[0] };
+  }
+
+  const nextIdx = currentIdx + 1;
+  const step = client.steps[currentIdx];
+  const stepDate = dates[currentIdx];
+  const stepDt = parseDate(stepDate);
+
+  const daysAgo = Math.floor((today - stepDt) / 86400000);
+
+  let nextDIdx = -1;
+  for (let i = currentIdx + 1; i < client.steps.length; i++) {
+    if (client.steps[i].isDCharge) { nextDIdx = i; break; }
+  }
+
+  let badge, label;
+  if (currentIdx === dates.length - 1) {
+    badge = 'badge-done'; label = '完了';
+  } else {
+    const nextDate = parseDate(dates[nextIdx]);
+    const daysUntilNext = Math.floor((nextDate - today) / 86400000);
+    if (daysAgo > 3 && client.steps[currentIdx].isDCharge) {
+      badge = 'badge-overdue'; label = '要確認';
+    } else if (daysUntilNext <= 2) {
+      badge = 'badge-soon'; label = '期限近';
+    } else {
+      badge = 'badge-active'; label = '進行中';
+    }
+  }
+
+  return {
+    label, badge,
+    stepIdx: currentIdx,
+    stepName: step.name,
+    stepNote: step.note || null,
+    stepDate,
+    nextDIdx,
+    nextDDate: nextDIdx >= 0 ? dates[nextDIdx] : null,
+    nextDName: nextDIdx >= 0 ? client.steps[nextDIdx].name : null,
+    currentIdx,
+  };
+}
+
+// =============================================
+// RENDER: DASHBOARD
+// =============================================
+
+function renderDashboard() {
+  const client = getClient();
+  const articles = getArticles();
+  const schedule = getSchedule();
+  const today = todayStr();
+
+  let total = articles.length;
+  let overdueCount = 0;
+  let soonCount = 0;
+  let doneCount = 0;
+
+  articles.forEach(a => {
+    const s = getArticleStatus(a);
+    if (s.badge === 'badge-done') doneCount++;
+    else if (s.badge === 'badge-overdue') overdueCount++;
+    else if (s.badge === 'badge-soon') soonCount++;
+  });
+
+  // 案件メモ欄（折りたたみ）
+  const memoText = clientData[activeClientKey].memo || '';
+  const memoHasContent = memoText.trim().length > 0;
+  document.getElementById('clientMemoArea').innerHTML = `
+    <div style="margin-bottom:12px;">
+      <button onclick="toggleClientMemo()" id="clientMemoToggle"
+        style="font-size:12px; font-weight:700; color:var(--primary); background:${memoHasContent ? '#EEF2FF' : 'transparent'}; border:1px solid ${memoHasContent ? '#A5B4FC' : '#D1D5DB'}; border-radius:8px; padding:5px 14px; cursor:pointer;">
+        📝 案件メモ ${memoHasContent ? '●' : ''}
+      </button>
+      <div id="clientMemoBox" style="display:none; margin-top:8px; background:white; border:1.5px solid #A5B4FC; border-radius:10px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+          <div style="font-size:11px; font-weight:700; color:var(--primary); letter-spacing:0.3px;">📝 ${getClient().name} メモ</div>
+          <button onclick="enterMemoEditMode()" id="memoEditBtn" title="編集" style="font-size:13px; padding:3px 10px; border:1px solid #D1D5DB; border-radius:7px; background:white; cursor:pointer; color:#6B7280;">⚙️ 編集</button>
+        </div>
+        <!-- 表示モード -->
+        <div id="memoViewArea"
+          style="font-size:14px; line-height:1.8; min-height:60px; padding:10px 12px; border-radius:8px; background:#FAFAFA; color:${memoText ? '#111827' : '#9CA3AF'};">
+          ${memoText || '<span style="color:#9CA3AF;">メモはまだありません。⚙️ 編集から追加できます。</span>'}
+        </div>
+        <!-- 編集モード（非表示） -->
+        <div id="memoEditArea" style="display:none;">
+          <div style="display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap;">
+            <button onclick="memoFormat('bold')" title="太字" style="padding:3px 10px; font-size:12px; font-weight:800; border:1px solid #D1D5DB; border-radius:6px; background:white; cursor:pointer;">B</button>
+            <button onclick="memoFormat('italic')" title="斜体" style="padding:3px 10px; font-size:12px; font-style:italic; border:1px solid #D1D5DB; border-radius:6px; background:white; cursor:pointer;">I</button>
+            <button onclick="memoFormat('red')" title="赤文字" style="padding:3px 10px; font-size:12px; font-weight:700; color:#EF4444; border:1px solid #FCA5A5; border-radius:6px; background:white; cursor:pointer;">赤</button>
+            <button onclick="memoFormat('orange')" title="オレンジ文字" style="padding:3px 10px; font-size:12px; font-weight:700; color:#F59E0B; border:1px solid #FDE68A; border-radius:6px; background:white; cursor:pointer;">橙</button>
+            <button onclick="memoFormat('clear')" title="書式をクリア" style="padding:3px 10px; font-size:11px; color:#6B7280; border:1px solid #D1D5DB; border-radius:6px; background:white; cursor:pointer;">クリア</button>
+          </div>
+          <div id="clientMemoText" contenteditable="true"
+            data-placeholder="案件全体のメモを入力（担当者・注意事項・連絡事項など）"
+            style="width:100%; border:1px solid #C4B5FD; border-radius:8px; padding:10px 12px; font-size:14px; line-height:1.8; font-family:inherit; outline:none; box-sizing:border-box; min-height:160px; white-space:pre-wrap;">${memoText}</div>
+          <div style="display:flex; gap:8px; margin-top:10px; justify-content:flex-end;">
+            <button onclick="cancelMemoEdit()" style="padding:5px 16px; border-radius:7px; border:1px solid #D1D5DB; background:white; color:#6B7280; font-size:13px; cursor:pointer; font-family:inherit;">キャンセル</button>
+            <button onclick="saveMemoEdit()" style="padding:5px 16px; border-radius:7px; border:none; background:var(--primary); color:white; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;">💾 保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const boxStyle = (filter) => activeFilter === filter
+    ? 'cursor:pointer; outline:3px solid #5B4FD9; outline-offset:2px;'
+    : 'cursor:pointer;';
+  document.getElementById('summaryGrid').innerHTML = `
+    <div class="summary-box" onclick="setFilter(null)" style="${boxStyle(null)}" title="全件表示">
+      <div class="summary-num num-blue">${total}</div><div class="summary-label">担当記事数</div>
+    </div>
+    <div class="summary-box" onclick="setFilter('done')" style="${boxStyle('done')}" title="完了のみ表示">
+      <div class="summary-num num-green">${doneCount}</div><div class="summary-label">完了 ${activeFilter==='done' ? '▼' : ''}</div>
+    </div>
+    <div class="summary-box" onclick="setFilter('soon')" style="${boxStyle('soon')}" title="期限が近い記事のみ表示">
+      <div class="summary-num num-yellow">${soonCount}</div><div class="summary-label">期限が近い ${activeFilter==='soon' ? '▼' : ''}</div>
+    </div>
+    <div class="summary-box" onclick="setFilter('overdue')" style="${boxStyle('overdue')}" title="要確認の記事のみ表示">
+      <div class="summary-num num-red">${overdueCount}</div><div class="summary-label">要確認 ${activeFilter==='overdue' ? '▼' : ''}</div>
+    </div>
+  `;
+
+  let alertsHtml = '';
+
+  articles.forEach(a => {
+    if (a.done) return;
+    const s = getArticleStatus(a);
+    const dates = schedule[a.cool];
+    if (!dates) return;
+
+    const doneSteps = a.doneSteps || [];
+
+    // ── ライター担当工程：当日・期限超過アラート ──
+    client.steps.forEach((step, i) => {
+      if (step.isDCharge) return; // D担当は別で処理
+      if (doneSteps.includes(i)) return; // 済みはスキップ
+      const stepDate = dates[i];
+      if (!stepDate) return;
+      const stepDt = parseDate(stepDate);
+      const daysOverdue = Math.floor((TODAY - stepDt) / 86400000);
+      const writerTag = a.writer ? `<span style="font-weight:700; color:#B45309;">【${a.writer}さん】</span> ` : '';
+      if (daysOverdue === 0) {
+        alertsHtml += `<div class="alert alert-danger" onclick="jumpToArticle(${a.id})" style="cursor:pointer;" title="クリックで記事に移動"><span class="alert-icon">📢</span><div><strong>ライターさんに声がけを：${step.name}（今日）</strong>No.${a.id}「${a.title.substring(0,22)}…」 ${writerTag}— 今日${fmtDate(stepDate)}が期限です。未済のためご確認ください。</div><span style="font-size:11px; color:#9CA3AF; margin-left:auto; flex-shrink:0;">→ 記事へ</span></div>`;
+      } else if (daysOverdue > 0) {
+        alertsHtml += `<div class="alert alert-danger" onclick="jumpToArticle(${a.id})" style="cursor:pointer;" title="クリックで記事に移動"><span class="alert-icon">🚨</span><div><strong>ライターさんに声がけを：${step.name}（${daysOverdue}日超過）</strong>No.${a.id}「${a.title.substring(0,22)}…」 ${writerTag}— ${fmtDate(stepDate)}が過ぎていますが未済です。</div><span style="font-size:11px; color:#9CA3AF; margin-left:auto; flex-shrink:0;">→ 記事へ</span></div>`;
+      }
+    });
+
+    // ── D担当工程：当日アラート ──
+    client.steps.forEach((step, i) => {
+      if (!step.isDCharge) return;
+      if (doneSteps.includes(i)) return; // 完了済みのステップはアラートなし
+      const stepDate = dates[i];
+      if (stepDate === today) {
+        alertsHtml += `<div class="alert alert-warning" onclick="jumpToArticle(${a.id})" style="cursor:pointer;" title="クリックで記事に移動"><span class="alert-icon">⚡</span><div><strong>今日が期限：${step.name}</strong>No.${a.id}「${a.title.substring(0,25)}…」 — 今日${fmtDate(stepDate)}が${step.name}の期限です</div><span style="font-size:11px; color:#9CA3AF; margin-left:auto; flex-shrink:0;">→ 記事へ</span></div>`;
+      }
+    });
+
+    // ── D担当工程：3日以内アラート ──
+    client.steps.forEach((step, i) => {
+      if (!step.isDCharge) return;
+      if (doneSteps.includes(i)) return; // 完了済みのステップはアラートなし
+      const stepDate = dates[i];
+      const stepDt = parseDate(stepDate);
+      const daysUntil = Math.floor((stepDt - TODAY) / 86400000);
+      if (daysUntil > 0 && daysUntil <= 3) {
+        alertsHtml += `<div class="alert alert-warning" onclick="jumpToArticle(${a.id})" style="cursor:pointer;" title="クリックで記事に移動"><span class="alert-icon">⏰</span><div><strong>あと${daysUntil}日：${step.name}</strong>No.${a.id}「${a.title.substring(0,25)}…」 — ${fmtDate(stepDate)}に${step.name}</div><span style="font-size:11px; color:#9CA3AF; margin-left:auto; flex-shrink:0;">→ 記事へ</span></div>`;
+      }
+    });
+  });
+
+  if (!alertsHtml && total > 0) {
+    alertsHtml = `<div class="alert alert-success"><span class="alert-icon">✅</span><div><strong>今日・明後日の期限はありません</strong>引き続き進行中の工程を確認してください</div></div>`;
+  }
+  document.getElementById('alerts').innerHTML = alertsHtml;
+
+  if (articles.length === 0) {
+    document.getElementById('articleStatusList').innerHTML = '<div class="empty">記事がありません。「記事管理」タブから追加してください。</div>';
+    return;
+  }
+
+  let visibleArticles;
+  if (activeFilter === 'done') {
+    visibleArticles = articles.filter(a => a.done);
+  } else if (activeFilter === 'soon') {
+    visibleArticles = articles.filter(a => getArticleStatus(a).badge === 'badge-soon');
+  } else if (activeFilter === 'overdue') {
+    visibleArticles = articles.filter(a => getArticleStatus(a).badge === 'badge-overdue');
+  } else {
+    visibleArticles = hideDone ? articles.filter(a => !a.done) : articles;
+  }
+  const hiddenCount = articles.length - visibleArticles.length;
+
+  // 完了非表示ボタンのラベル同期
+  const doneBtn = document.getElementById('doneToggle');
+  if (doneBtn) {
+    if (hideDone) {
+      doneBtn.textContent = hiddenCount > 0 ? `✅ 完了${hiddenCount}本を隠す中` : '✅ 完了を隠す中';
+      doneBtn.style.background = '#ECFDF5'; doneBtn.style.color = '#065F46'; doneBtn.style.borderColor = '#6EE7B7';
+    } else {
+      doneBtn.textContent = '👁 完了も表示中';
+      doneBtn.style.background = ''; doneBtn.style.color = ''; doneBtn.style.borderColor = '';
+    }
+  }
+
+  if (visibleArticles.length === 0) {
+    document.getElementById('articleStatusList').innerHTML = `<div class="empty">🎉 すべての記事が完了済みです！</div>`;
+    return;
+  }
+
+  let listHtml = '';
+  visibleArticles.forEach(a => {
+    const idx = articles.indexOf(a);
+    const s = getArticleStatus(a);
+    const dates = schedule[a.cool];
+    if (!dates) return;
+
+
+    let nextDHtml = '';
+    if (s.nextDName && !a.done) {
+      nextDHtml = `<div style="font-size:11px; color:var(--primary); margin-top:3px;">次のD作業: ${s.nextDName} ${fmtDate(s.nextDDate)}</div>`;
+    }
+
+    let receivedHtml = '';
+
+    listHtml += `
+      <div class="article-item" id="article-item-${a.id}" style="position:relative; ${a.done ? 'opacity:0.45; filter:grayscale(0.8); background:#F3F4F6;' : ''}">
+        ${a.month ? `<span style="position:absolute; top:0; left:0; font-size:10px; font-weight:800; color:white; background:${a.month === 4 ? '#F59E0B' : '#8B5CF6'}; padding:1px 7px; border-radius:8px 0 6px 0; line-height:1.8;">${a.month}月</span>` : ''}
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; width:28px;">
+          ${a.cool ? `<span style="font-size:13px; color:${client.coolColor(a.cool)}; font-weight:700; line-height:1; text-align:center;">${client.coolLabel(a.cool)}</span>` : ''}
+        </div>
+        <div style="flex:1; min-width:0;">
+          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            <span style="font-size:11px; font-weight:700; color:${client.coolColor(a.cool)}; flex-shrink:0;">No.${a.id}</span>
+            <div class="art-title">${a.title}</div>
+            ${a.writer ? `<span style="flex-shrink:0; font-size:11px; color:white; background:#64748B; padding:1px 7px; border-radius:10px; font-weight:700;">ライター：${a.writer}さん</span>` : ''}
+            ${a.kosei ? `<span style="flex-shrink:0; font-size:11px; color:white; background:#7C3AED; padding:1px 7px; border-radius:10px; font-weight:700;">校正者：${a.kosei}さん</span>` : ''}
+          </div>
+          ${receivedHtml}
+          <div style="display:flex; flex-direction:row; flex-wrap:wrap; gap:6px; margin-top:6px;">
+            ${client.steps.map((step, si) => {
+              const isDone = (a.doneSteps||[]).includes(si);
+              const stepDate = (a.stepDates||{})[si] || (dates ? dates[si] : '') || '';
+              const showDate = true;
+              const dateLabel = showDate && stepDate ? ` <span style="font-weight:600; ${isDone ? 'text-decoration:line-through; opacity:0.5;' : ''}">${fmtDate(stepDate)}</span>` : '';
+              return `<button onclick="toggleStepDone(${idx}, ${si}, ${!isDone})" style="font-size:11px; padding:3px 10px; border-radius:6px; border:1px solid ${isDone ? '#E5E7EB' : '#374151'}; background:${isDone ? '#F9FAFB' : 'white'}; color:${isDone ? '#C4B5FD' : '#111827'}; cursor:pointer; font-weight:700; white-space:nowrap;">${isDone ? '✓' : '+'} ${step.short}${dateLabel}</button>`;
+            }).join('')}
+          </div>
+          <div style="margin-top:6px; display:flex; align-items:center; gap:6px;">
+            <span style="font-size:11px; color:var(--text-sub); flex-shrink:0;">📝</span>
+            <input type="text" value="${(a.memo||'').replace(/"/g,'&quot;')}" placeholder="メモ"
+              onchange="updateMemo(${idx}, this.value)"
+              style="font-size:11px; padding:3px 8px; width:100%; border-radius:5px; border:1px solid var(--border); background:${a.memo ? '#FFFBEB' : 'white'};">
+          </div>
+          ${nextDHtml}
+        </div>
+        <div class="art-step">
+          <div class="art-badge ${s.badge}">${s.label}</div>
+          <div class="art-step-name" style="margin-top:4px;">${a.done ? '完了' : s.stepName}</div>
+          <div class="art-step-date">${a.done ? '' : fmtDate(s.stepDate)}</div>
+          ${(!a.done && s.stepNote) ? `<div style="font-size:10px; color:var(--text-sub); margin-top:2px; max-width:140px; white-space:normal; line-height:1.3;">${s.stepNote}</div>` : ''}
+          <button onclick="toggleDone(${idx}, '${a.done ? 'false' : 'true'}')" style="margin-top:6px; font-size:11px; font-weight:700; padding:3px 10px; border-radius:6px; border:1px solid ${a.done ? '#D1D5DB' : '#6EE7B7'}; background:${a.done ? '#F9FAFB' : '#ECFDF5'}; color:${a.done ? '#9CA3AF' : '#065F46'}; cursor:pointer; width:100%;">${a.done ? '↩ 戻す' : '✅ 完了'}</button>
+        </div>
+      </div>
+    `;
+  });
+
+  document.getElementById('articleStatusList').innerHTML = listHtml;
+}
+
+// =============================================
+// RENDER: GANTT
+// =============================================
+
+function renderGantt() {
+  const client = getClient();
+  const articles = getArticles();
+  const schedule = getSchedule();
+
+  if (client.steps.length === 0) {
+    document.getElementById('ganttWrap').innerHTML = '<div class="empty">このクライアントはまだデータがありません</div>';
+    return;
+  }
+
+  // ステップヘッダー
+  let headerCols = client.steps.map(step =>
+    `<th style="padding:8px 10px; font-size:12px; font-weight:700; color:${step.isDCharge ? 'var(--primary)' : 'var(--text-sub)'}; white-space:nowrap; border:1px solid var(--border); background:${step.isDCharge ? '#F5F3FF' : '#F9FAFB'}; text-align:center;">
+      ${step.isDCharge ? '★ ' : ''}${step.name}
+    </th>`
+  ).join('');
+
+  let html = `
+    <div style="font-size:11px; color:var(--text-sub); margin-bottom:10px; display:flex; gap:16px; flex-wrap:wrap;">
+      <span><span style="display:inline-block;width:12px;height:12px;background:#F3F4F6;border:1px solid #D1D5DB;border-radius:3px;margin-right:4px;vertical-align:middle;"></span>済み</span>
+      <span><span style="display:inline-block;width:12px;height:12px;background:#FEE2E2;border:1px solid #FCA5A5;border-radius:3px;margin-right:4px;vertical-align:middle;"></span>今日・期限超過</span>
+      <span><span style="display:inline-block;width:12px;height:12px;background:#FEF9C3;border:1px solid #FDE047;border-radius:3px;margin-right:4px;vertical-align:middle;"></span>3日以内</span>
+      <span><span style="display:inline-block;width:12px;height:12px;background:white;border:1px solid #D1D5DB;border-radius:3px;margin-right:4px;vertical-align:middle;"></span>今後</span>
+      <span style="color:var(--primary); font-weight:700;">★ = D担当工程</span>
+    </div>
+    <div style="overflow-x:auto;">
+    <table style="border-collapse:collapse; width:100%; min-width:700px;">
+      <thead>
+        <tr>
+          <th style="padding:8px 10px; font-size:12px; font-weight:700; color:var(--text-sub); background:#F9FAFB; border:1px solid var(--border); text-align:left; white-space:nowrap; min-width:180px;">記事</th>
+          ${headerCols}
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  articles.forEach(a => {
+    if (a.done) return; // 完了記事はスキップ
+    const dates = schedule[a.cool];
+    if (!dates) return;
+    const doneSteps = a.doneSteps || [];
+
+    const stepCells = client.steps.map((step, i) => {
+      const dateStr = (a.stepDates||{})[i] || dates[i] || '';
+      if (!dateStr) return `<td style="border:1px solid var(--border); text-align:center;">—</td>`;
+
+      const dt = parseDate(dateStr);
+      const daysUntil = Math.floor((dt - TODAY) / 86400000);
+      const isDone = doneSteps.includes(i);
+
+      let bg, border, textStyle;
+      if (isDone) {
+        bg = '#F3F4F6'; border = '#D1D5DB'; textStyle = 'text-decoration:line-through; color:#9CA3AF;';
+      } else if (daysUntil < 0) {
+        bg = '#FEE2E2'; border = '#FCA5A5'; textStyle = 'color:#991B1B; font-weight:700;';
+      } else if (daysUntil === 0) {
+        bg = '#FEE2E2'; border = '#EF4444'; textStyle = 'color:#991B1B; font-weight:800;';
+      } else if (daysUntil <= 3) {
+        bg = '#FEF9C3'; border = '#FDE047'; textStyle = 'color:#854D0E; font-weight:700;';
+      } else {
+        bg = 'white'; border = '#E5E7EB'; textStyle = 'color:#374151;';
+      }
+
+      const todayMark = daysUntil === 0 ? '<br><span style="font-size:9px; color:#EF4444;">今日!</span>' : '';
+      const overdueMark = daysUntil < 0 && !isDone ? `<br><span style="font-size:9px; color:#EF4444;">${Math.abs(daysUntil)}日超過</span>` : '';
+
+      return `<td style="border:1px solid ${border}; background:${bg}; text-align:center; padding:6px 8px; font-size:12px; ${textStyle}">
+        ${fmtDate(dateStr)}${todayMark}${overdueMark}
+      </td>`;
+    }).join('');
+
+    const writerBadge = a.writer ? `<span style="font-size:10px; color:white; background:#64748B; padding:1px 5px; border-radius:8px; margin-left:4px;">ライター：${a.writer}さん</span>` : '';
+    const koseiBadge = a.kosei ? `<span style="font-size:10px; color:white; background:#7C3AED; padding:1px 5px; border-radius:8px; margin-left:2px;">校正者：${a.kosei}さん</span>` : '';
+
+    html += `
+      <tr>
+        <td style="border:1px solid var(--border); padding:6px 10px; background:white;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:11px; font-weight:700; color:${client.coolColor(a.cool)}; flex-shrink:0;">No.${a.id}</span>
+            <span style="font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:120px;" title="${a.title}">${a.title}</span>
+            ${writerBadge}${koseiBadge}
+          </div>
+          <div style="font-size:10px; color:${client.coolColor(a.cool)}; font-weight:700; margin-top:2px;">${client.coolLabel(a.cool)}</div>
+        </td>
+        ${stepCells}
+      </tr>
+    `;
+  });
+
+  html += '</tbody></table></div>';
+  document.getElementById('ganttWrap').innerHTML = html;
+}
+
+// =============================================
+// RENDER: MANAGE
+// =============================================
+
+function renderManage() {
+  const articles = getArticles();
+  const client = getClient();
+
+  let html = '';
+  if (articles.length === 0) {
+    html = '<tr><td colspan="6" class="empty">記事がありません</td></tr>';
+  } else {
+    articles.forEach((a, idx) => {
+      html += `
+        <tr>
+          <td><strong>No.${a.id}</strong></td>
+          <td>${a.title}</td>
+          <td><span class="tag-cool" style="background:${client.coolColor(a.cool)}">${client.coolLabel(a.cool)}</span></td>
+          <td>${a.tantouD}</td>
+          <td>${a.writer ? `<span style="font-size:11px; background:#F1F5F9; padding:2px 7px; border-radius:8px; font-weight:600;">ライター：${a.writer}さん</span>` : '<span style="color:#ccc; font-size:11px;">—</span>'}</td>
+          <td>${a.kosei ? `<span style="font-size:11px; background:#EDE9FE; color:#5B21B6; padding:2px 7px; border-radius:8px; font-weight:600;">校正者：${a.kosei}さん</span>` : '<span style="color:#ccc; font-size:11px;">—</span>'}</td>
+          <td>
+            <div style="display:flex; flex-direction:column; gap:5px;">
+              <input type="text" value="${a.memo || ''}" placeholder="メモ"
+                onchange="updateMemo(${idx}, this.value)"
+                style="font-size:11px; padding:3px 8px; width:220px; border-radius:5px; border:1px solid var(--border);">
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                ${client.steps.map((step, si) => `
+                  <label style="font-size:10px; display:flex; align-items:center; gap:3px; cursor:pointer; color:var(--text-sub); white-space:nowrap;">
+                    <input type="checkbox" ${(a.doneSteps||[]).includes(si) ? 'checked' : ''}
+                      onchange="toggleStepDone(${idx}, ${si}, this.checked)"
+                      style="width:12px; height:12px; cursor:pointer;">
+                    ${step.short}済
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+          </td>
+          <td>
+            <select onchange="toggleDone(${idx}, this.value)" style="font-size:11px; padding:3px 6px;">
+              <option value="false" ${!a.done ? 'selected' : ''}>進行中</option>
+              <option value="true" ${a.done ? 'selected' : ''}>完了</option>
+            </select>
+          </td>
+          <td><button class="btn btn-danger btn-sm" onclick="removeArticle(${idx})">削除</button></td>
+        </tr>
+      `;
+    });
+  }
+  document.getElementById('articleTableBody').innerHTML = html;
+
+  // Update cool selector
+  let coolOptions = '';
+  if (activeClientKey === 'boundary') {
+    coolOptions = '<option value="1">記事</option>';
+  } else if (activeClientKey === 'grape') {
+    coolOptions = `
+      <option value="1">① No1〜10</option>
+      <option value="2">② No11〜20</option>
+      <option value="3">③ No21〜30</option>
+      <option value="4">④ No31〜40</option>
+    `;
+  } else if (activeClientKey === 'breik') {
+    coolOptions = `
+      <option value="1">4/20納品グループ</option>
+      <option value="2">4/27納品グループ</option>
+    `;
+  } else {
+    coolOptions = '<option value="1">クール1</option>';
+  }
+  const coolSelect = document.getElementById('newCool');
+  if (coolSelect) coolSelect.innerHTML = coolOptions;
+}
+
+// =============================================
+// RENDER: SETTINGS
+// =============================================
+
+function renderSettings() {
+  const client = getClient();
+  const schedule = getSchedule();
+
+  if (client.steps.length === 0) {
+    document.getElementById('settingsTable').innerHTML = '<tr><td colspan="10" class="empty">このクライアントはまだスケジュール設定がありません</td></tr>';
+    return;
+  }
+
+  let html = '<thead><tr><th>No</th><th>工程名</th><th>D担当</th>';
+  Object.keys(schedule).forEach(c => {
+    html += `<th style="background:${client.coolColor(parseInt(c))}20; color:${client.coolColor(parseInt(c))};">${client.coolLabel(parseInt(c))}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  client.steps.forEach((step, i) => {
+    const rowClass = step.isDCharge ? ' class="d-charge-row"' : '';
+    html += `<tr${rowClass}>
+      <td>${step.id}</td>
+      <td>${step.name}</td>
+      <td>${step.isDCharge ? '<span style="color:var(--primary); font-weight:700;">✓</span>' : ''}</td>
+    `;
+    Object.keys(schedule).forEach(c => {
+      const cool = parseInt(c);
+      html += `<td><input type="date" id="sched_${cool}_${i}" value="${schedule[cool][i]}"></td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody>';
+  document.getElementById('settingsTable').innerHTML = html;
+}
+
+// =============================================
+// ACTIONS
+// =============================================
+
+function switchClient(key) {
+  activeClientKey = key;
+  showOnlyD = false;
+  const client = getClient();
+  // ヘッダー色を変更
+  document.querySelector('.header').style.background = client.color;
+  document.getElementById('clientBar').style.background = client.color + 'EE';
+  // クライアントボタンのアクティブ状態を更新
+  document.querySelectorAll('.client-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.key === key);
+  });
+  // フィルターボタンをリセット
+  const btn = document.getElementById('filterToggle');
+  if(btn) { btn.textContent = '📋 全工程表示'; btn.style.background=''; btn.style.color=''; btn.style.borderColor=''; }
+  renderAll();
+}
+
+function setFilter(filter) {
+  // 同じフィルターをもう一度クリックしたら解除
+  activeFilter = (activeFilter === filter) ? null : filter;
+  renderDashboard();
+}
+
+function memoFormat(type) {
+  const el = document.getElementById('clientMemoText');
+  if (!el) return;
+  el.focus();
+  if (type === 'bold') document.execCommand('bold');
+  else if (type === 'italic') document.execCommand('italic');
+  else if (type === 'red') document.execCommand('foreColor', false, '#EF4444');
+  else if (type === 'orange') document.execCommand('foreColor', false, '#F59E0B');
+  else if (type === 'clear') document.execCommand('removeFormat');
+}
+
+function enterMemoEditMode() {
+  document.getElementById('memoViewArea').style.display = 'none';
+  document.getElementById('memoEditArea').style.display = 'block';
+  document.getElementById('memoEditBtn').style.display = 'none';
+  document.getElementById('clientMemoText').focus();
+}
+
+function cancelMemoEdit() {
+  document.getElementById('memoViewArea').style.display = 'block';
+  document.getElementById('memoEditArea').style.display = 'none';
+  document.getElementById('memoEditBtn').style.display = '';
+  // 編集内容を元に戻す
+  document.getElementById('clientMemoText').innerHTML = clientData[activeClientKey].memo || '';
+}
+
+function saveMemoEdit() {
+  const el = document.getElementById('clientMemoText');
+  const value = el.innerHTML;
+  saveClientMemo(value);
+  // 表示エリアを更新
+  const viewArea = document.getElementById('memoViewArea');
+  viewArea.innerHTML = value || '<span style="color:#9CA3AF;">メモはまだありません。⚙️ 編集から追加できます。</span>';
+  viewArea.style.color = value ? '#111827' : '#9CA3AF';
+  document.getElementById('memoViewArea').style.display = 'block';
+  document.getElementById('memoEditArea').style.display = 'none';
+  document.getElementById('memoEditBtn').style.display = '';
+}
+
+function toggleClientMemo() {
+  const box = document.getElementById('clientMemoBox');
+  if (!box) return;
+  const isOpen = box.style.display !== 'none';
+  box.style.display = isOpen ? 'none' : 'block';
+}
+
+function saveClientMemo(value) {
+  clientData[activeClientKey].memo = value;
+  saveToCloud();
+  // メモがあればボタンに●マーク
+  const btn = document.getElementById('clientMemoToggle');
+  if (btn) {
+    const hasContent = value.trim().length > 0;
+    btn.textContent = `📝 案件メモ ${hasContent ? '●' : ''}`;
+    btn.style.background = hasContent ? '#EEF2FF' : 'transparent';
+    btn.style.borderColor = hasContent ? '#A5B4FC' : '#D1D5DB';
+  }
+}
+
+function jumpToArticle(articleId) {
+  // ダッシュボードタブに切り替え
+  showTab('dashboard');
+  // 完了非表示中の場合は一時的に表示
+  const article = getArticles().find(a => a.id === articleId);
+  if (article && article.done && hideDone) {
+    hideDone = false;
+    renderAll();
+  }
+  // 該当記事にスクロール＆ハイライト
+  setTimeout(() => {
+    const el = document.getElementById(`article-item-${articleId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.style.outline = '3px solid #EF4444';
+      el.style.outlineOffset = '2px';
+      setTimeout(() => { el.style.outline = ''; el.style.outlineOffset = ''; }, 2000);
+    }
+  }, 100);
+}
+
+function toggleHideDone() {
+  hideDone = !hideDone;
+  const btn = document.getElementById('doneToggle');
+  if (hideDone) {
+    btn.textContent = '✅ 完了を隠す中';
+    btn.style.background = '#ECFDF5';
+    btn.style.color = '#065F46';
+    btn.style.borderColor = '#6EE7B7';
+  } else {
+    btn.textContent = '👁 完了も表示中';
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+  }
+  renderDashboard();
+}
+
+function toggleDFilter() {
+  showOnlyD = !showOnlyD;
+  const btn = document.getElementById('filterToggle');
+  const note = document.getElementById('filterNote');
+  if (showOnlyD) {
+    btn.textContent = '✂️ 関係ない工程を非表示中';
+    btn.style.background = '#F5F3FF';
+    btn.style.color = 'var(--primary)';
+    btn.style.borderColor = 'var(--primary)';
+    note.innerHTML = '企画案提出〜ライター展開（工程1〜5）を非表示。<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--primary);outline:2px solid var(--primary);outline-offset:1px;margin:0 2px;"></span>が<strong>D担当工程</strong>です';
+  } else {
+    btn.textContent = '📋 全工程表示';
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+    note.innerHTML = 'ドットの<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--primary);outline:2px solid var(--primary);outline-offset:1px;margin:0 2px;"></span>が<strong>D担当工程</strong>です';
+  }
+  renderDashboard();
+  if (document.getElementById('tab-gantt').classList.contains('active')) renderGantt();
+}
+
+function addArticle() {
+  const no = parseInt(document.getElementById('newNo').value);
+  const title = document.getElementById('newTitle').value.trim();
+  const cool = parseInt(document.getElementById('newCool').value);
+  const tantou = document.getElementById('newTantou').value.trim() || '金澤';
+  const writer = document.getElementById('newWriter').value.trim();
+  const kosei = document.getElementById('newKosei').value.trim();
+  const month = parseInt(document.getElementById('newMonth').value);
+  const done = document.getElementById('newStatus').value === 'done';
+  const articles = getArticles();
+
+  if (!no || !title) { alert('記事NoとタイトルとD担当を入力してください'); return; }
+  if (articles.find(a => a.id === no)) { alert('同じNoの記事がすでに存在します'); return; }
+
+  articles.push({ id: no, title, cool, month, tantouD: tantou, writer: writer || undefined, kosei: kosei || undefined, done });
+  articles.sort((a,b) => a.id - b.id);
+
+  document.getElementById('newNo').value = '';
+  document.getElementById('newTitle').value = '';
+
+  saveToCloud();
+  renderAll();
+}
+
+function removeArticle(idx) {
+  const articles = getArticles();
+  if (!confirm(`No.${articles[idx].id}「${articles[idx].title}」を削除しますか？`)) return;
+  articles.splice(idx, 1);
+  saveToCloud();
+  renderAll();
+}
+
+function updateMemo(idx, val) {
+  const articles = getArticles();
+  articles[idx].memo = val.trim() || undefined;
+  saveToCloud();
+  renderDashboard();
+}
+
+function toggleStepDone(articleIdx, stepIdx, checked) {
+  const articles = getArticles();
+  const a = articles[articleIdx];
+  if (!a.doneSteps) a.doneSteps = [];
+  if (checked) {
+    if (!a.doneSteps.includes(stepIdx)) a.doneSteps.push(stepIdx);
+  } else {
+    a.doneSteps = a.doneSteps.filter(s => s !== stepIdx);
+  }
+  saveToCloud();
+  renderDashboard();
+}
+
+function updateStepDate(articleIdx, stepIdx, val) {
+  const articles = getArticles();
+  const a = articles[articleIdx];
+  if (!a.stepDates) a.stepDates = {};
+  if (val) a.stepDates[stepIdx] = val;
+  else delete a.stepDates[stepIdx];
+  saveToCloud();
+}
+
+function toggleReceived(articleIdx, itemIdx) {
+  const articles = getArticles();
+  const a = articles[articleIdx];
+  if (!a.received) a.received = [];
+  if (a.received.includes(itemIdx)) {
+    a.received = a.received.filter(i => i !== itemIdx);
+  } else {
+    a.received.push(itemIdx);
+  }
+  saveToCloud();
+  renderDashboard();
+}
+
+function toggleDone(idx, val) {
+  const articles = getArticles();
+  articles[idx].done = val === 'true';
+  saveToCloud();
+  renderDashboard();
+  renderGantt();
+}
+
+function saveSettings() {
+  const client = getClient();
+  const schedule = getSchedule();
+
+  Object.keys(schedule).forEach(c => {
+    const cool = parseInt(c);
+    client.steps.forEach((_, i) => {
+      const val = document.getElementById(`sched_${cool}_${i}`).value;
+      if (val) schedule[cool][i] = val;
+    });
+  });
+  saveToCloud();
+  alert('スケジュールを保存しました！');
+  renderDashboard();
+  renderGantt();
+}
+
+function resetSettings() {
+  if (!confirm('スケジュールをデフォルトに戻しますか？')) return;
+  const client = getClient();
+  clientData[activeClientKey].schedule = JSON.parse(JSON.stringify(client.defaultSchedule));
+  saveToCloud();
+  renderSettings();
+  renderDashboard();
+  renderGantt();
+}
+
+function exportData() {
+  const data = JSON.stringify(clientData[activeClientKey], null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `schedule-data-${activeClientKey}-${todayStr()}.json`;
+  a.click();
+}
+
+function importData(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.schedule) clientData[activeClientKey].schedule = data.schedule;
+      if (data.articles) clientData[activeClientKey].articles = data.articles;
+      saveToCloud();
+      renderAll();
+      alert('インポート完了！');
+    } catch {
+      alert('JSONの読み込みに失敗しました');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// =============================================
+// TAB NAVIGATION
+// =============================================
+
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const names = ['dashboard','gantt','manage','settings'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+
+  if (name === 'gantt') renderGantt();
+  if (name === 'manage') renderManage();
+  if (name === 'settings') renderSettings();
+}
+
+function renderAll() {
+  renderDashboard();
+  renderManage();
+  renderSettings();
+  if (document.getElementById('tab-gantt').classList.contains('active')) renderGantt();
+}
+
+// =============================================
+// INIT
+// =============================================
+
+async function init() {
+  const days = ['日','月','火','水','木','金','土'];
+  document.getElementById('todayLabel').textContent =
+    `今日：${TODAY.getFullYear()}年${TODAY.getMonth()+1}月${TODAY.getDate()}日（${days[TODAY.getDay()]}）`;
+  document.querySelector('.header').style.background = getClient().color;
+
+  // クラウドからデータ読み込み
+  await loadFromCloud();
+
+  // ローディング非表示
+  document.getElementById('loadingOverlay').style.display = 'none';
+
+  renderDashboard();
+}
+
+init();
+</script>
+</body>
+</html>
