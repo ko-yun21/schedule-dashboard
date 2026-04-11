@@ -228,7 +228,38 @@ input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
-<div id="loadingOverlay" style="display:flex; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.92); z-index:9999; flex-direction:column; align-items:center; justify-content:center; gap:12px;">
+<!-- ログイン画面 -->
+<div id="loginOverlay" style="display:flex; position:fixed; top:0; left:0; right:0; bottom:0; background:#1E1B4B; z-index:10000; flex-direction:column; align-items:center; justify-content:center; gap:0;">
+  <div style="background:white; border-radius:16px; padding:36px 32px; width:100%; max-width:360px; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+    <div style="text-align:center; margin-bottom:28px;">
+      <div style="font-size:32px; margin-bottom:8px;">📋</div>
+      <div style="font-size:18px; font-weight:800; color:#1E1B4B;">記事スケジュール管理</div>
+      <div style="font-size:12px; color:#9CA3AF; margin-top:4px;">社内専用ツール</div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div>
+        <label style="font-size:11px; font-weight:700; color:#6B7280; display:block; margin-bottom:4px;">ID</label>
+        <input id="loginId" type="text" placeholder="IDを入力"
+          style="width:100%; padding:10px 12px; border:1.5px solid #E5E7EB; border-radius:8px; font-size:14px; outline:none; box-sizing:border-box; font-family:inherit;"
+          onkeydown="if(event.key==='Enter') document.getElementById('loginPass').focus()">
+      </div>
+      <div>
+        <label style="font-size:11px; font-weight:700; color:#6B7280; display:block; margin-bottom:4px;">パスワード</label>
+        <input id="loginPass" type="password" placeholder="パスワードを入力"
+          style="width:100%; padding:10px 12px; border:1.5px solid #E5E7EB; border-radius:8px; font-size:14px; outline:none; box-sizing:border-box; font-family:inherit;"
+          onkeydown="if(event.key==='Enter') doLogin()">
+      </div>
+      <div id="loginError" style="display:none; font-size:12px; color:#EF4444; text-align:center; font-weight:700;">IDまたはパスワードが違います</div>
+      <button onclick="doLogin()"
+        style="margin-top:4px; width:100%; padding:12px; background:#5B4FD9; color:white; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit;">
+        ログイン
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ローディング画面 -->
+<div id="loadingOverlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.92); z-index:9999; flex-direction:column; align-items:center; justify-content:center; gap:12px;">
   <div style="font-size:36px;">☁️</div>
   <div style="font-size:16px; font-weight:700; color:#5B4FD9;">データを読み込んでいます...</div>
   <div style="font-size:12px; color:#9CA3AF;">Supabaseに接続中</div>
@@ -393,10 +424,10 @@ input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px 
       <div style="margin-top:14px; background:#F0F9FF; border:1.5px solid #BAE6FD; border-radius:10px; padding:10px 14px; font-size:12px; color:#0369A1; position:relative; line-height:1.7;">
         <div style="position:absolute; top:-9px; left:20px; width:0; height:0; border-left:8px solid transparent; border-right:8px solid transparent; border-bottom:9px solid #BAE6FD;"></div>
         <div style="position:absolute; top:-7px; left:21px; width:0; height:0; border-left:7px solid transparent; border-right:7px solid transparent; border-bottom:8px solid #F0F9FF;"></div>
-        💡 <strong>Claudeにチェック内容を反映してもらうには?</strong><br>
+        💡 <strong>Claudeにチェック内容を反映してもらうには？</strong><br>
         ① ブラウザでチェックを更新したら「📤 JSONエクスポート」を押す<br>
-        ② 保存されたファイルをClaudeのチャットにドラッグ&ドロップ<br>
-        ③ Claudeが内容をHTMLに反映してくれます!
+        ② 保存されたファイルをClaudeのチャットにドラッグ＆ドロップ<br>
+        ③ Claudeが内容をHTMLに反映してくれます！
       </div>
     </div>
   </div>
@@ -429,27 +460,27 @@ const CLIENTS = {
     coolLabel: (c) => ['','①週','②週','③週','④週'][c],
     coolColor: (c) => ['','#3B82F6','#10B981','#F59E0B','#EF4444'][c],
     defaultArticles: [
-      { id: 2,  title: '新生活のひとり暮らしで知っておきたい!誰でもできる「防犯対策法」', cool: 1, month: 4, tantouD: '金澤', writer: '大西', kosei: '池山', done: false, doneSteps: [0] },
-      { id: 8,  title: '引越し費用を抑えるなら「平日夕方」が狙い目?時間帯でどのくらい変わる?', cool: 1, month: 4, tantouD: '金澤', writer: '小川', kosei: '石黒', done: false, doneSteps: [0,1] },
-      { id: 9,  title: '冷蔵庫は壁から何センチ離して設置するのがベスト?放熱スペースで変わる節電効果', cool: 1, month: 4, tantouD: '金澤', writer: '小川', kosei: '勝矢', done: false, doneSteps: [0,1] },
-      { id: 10, title: '引越し後の冷蔵庫、すぐに電源を入れのはNG?電源を入れる推奨タイミングをメーカーに聞いてみた', cool: 1, month: 4, tantouD: '金澤', writer: '小川', kosei: '高田', done: false, doneSteps: [0,1] },
-      { id: 11, title: 'その節水対策、実は損してるかも?今日からできるトイレの節約&お掃除術', cool: 2, month: 4, tantouD: '金澤', writer: '石澤', kosei: '池山', done: true },
-      { id: 13, title: 'そのままでは故障するかも?暖房器具の片付けでのNG行動とは?', cool: 2, month: 4, tantouD: '金澤', writer: '山本', kosei: '中村', done: false, doneSteps: [0,1] },
+      { id: 2,  title: '新生活のひとり暮らしで知っておきたい！誰でもできる「防犯対策法」', cool: 1, month: 4, tantouD: '金澤', writer: '大西', kosei: '池山', done: false, doneSteps: [0] },
+      { id: 8,  title: '引越し費用を抑えるなら「平日夕方」が狙い目？時間帯でどのくらい変わる？', cool: 1, month: 4, tantouD: '金澤', writer: '小川', kosei: '石黒', done: false, doneSteps: [0,1] },
+      { id: 9,  title: '冷蔵庫は壁から何センチ離して設置するのがベスト？放熱スペースで変わる節電効果', cool: 1, month: 4, tantouD: '金澤', writer: '小川', kosei: '勝矢', done: false, doneSteps: [0,1] },
+      { id: 10, title: '引越し後の冷蔵庫、すぐに電源を入れのはNG？電源を入れる推奨タイミングをメーカーに聞いてみた', cool: 1, month: 4, tantouD: '金澤', writer: '小川', kosei: '高田', done: false, doneSteps: [0,1] },
+      { id: 11, title: 'その節水対策、実は損してるかも？今日からできるトイレの節約＆お掃除術', cool: 2, month: 4, tantouD: '金澤', writer: '石澤', kosei: '池山', done: true },
+      { id: 13, title: 'そのままでは故障するかも？暖房器具の片付けでのNG行動とは？', cool: 2, month: 4, tantouD: '金澤', writer: '山本', kosei: '中村', done: false, doneSteps: [0,1] },
       { id: 15, title: '春の衣替えでやりがち…服を守る"防虫剤"の正しい使い方', cool: 2, month: 4, tantouD: '金澤', writer: '小川', kosei: '高田', done: false, doneSteps: [0,1] },
-      { id: 17, title: 'キノコは冷凍した方が美味しくなる?旨味が増える保存方法とは', cool: 2, month: 4, tantouD: '金澤', writer: '冨田', kosei: '國安', done: false, doneSteps: [0,1] },
-      { id: 19, title: '引越し前に忘れがち…洗濯機の「水抜き」しないと追加料金?', cool: 2, month: 4, tantouD: '金澤', writer: '小川', kosei: '石黒', done: false, doneSteps: [0] },
-      { id: 22, title: 'エアコンの「試運転」は5月が鉄則?本番で故障を防ぐためのチェック項目', cool: 3, month: 4, tantouD: '金澤', writer: '石澤', kosei: '池山', done: false, doneSteps: [0,1,2,3,4,5], memo: '＜河野さん入稿中＞' },
-      { id: 24, title: 'プロ用（プレミア）と普通の殺虫剤、何が違う?◯◯◯に聞いてみた', cool: 3, month: 4, tantouD: '金澤', writer: '小川', kosei: '高田', done: false, doneSteps: [0] },
-      { id: 26, title: '引っ越しするなら"入居前"が効果的!「新居の害虫対策」と注意点', cool: 3, month: 4, tantouD: '金澤', writer: '小川', kosei: '國安', done: false, doneSteps: [0] },
+      { id: 17, title: 'キノコは冷凍した方が美味しくなる？旨味が増える保存方法とは', cool: 2, month: 4, tantouD: '金澤', writer: '冨田', kosei: '國安', done: false, doneSteps: [0,1] },
+      { id: 19, title: '引越し前に忘れがち…洗濯機の「水抜き」しないと追加料金？', cool: 2, month: 4, tantouD: '金澤', writer: '小川', kosei: '石黒', done: false, doneSteps: [0] },
+      { id: 22, title: 'エアコンの「試運転」は5月が鉄則？本番で故障を防ぐためのチェック項目', cool: 3, month: 4, tantouD: '金澤', writer: '石澤', kosei: '池山', done: false, doneSteps: [0,1,2,3,4,5], memo: '＜河野さん入稿中＞' },
+      { id: 24, title: 'プロ用（プレミア）と普通の殺虫剤、何が違う？◯◯◯に聞いてみた', cool: 3, month: 4, tantouD: '金澤', writer: '小川', kosei: '高田', done: false, doneSteps: [0] },
+      { id: 26, title: '引っ越しするなら"入居前"が効果的！「新居の害虫対策」と注意点', cool: 3, month: 4, tantouD: '金澤', writer: '小川', kosei: '國安', done: false, doneSteps: [0] },
       { id: 28, title: 'カーテンを変えるだけで電気代の節約!?節電効果が高まるカーテンの選び方とは', cool: 3, month: 4, tantouD: '金澤', writer: '森本', kosei: '懸谷', done: true },
-      { id: 30, title: '憧れの"キャンピングカー"生活!1ヶ月夫婦2人での生活費はどのくらい?', cool: 3, month: 4, tantouD: '金澤', writer: '小川', kosei: '勝矢', done: false, doneSteps: [] },
-      { id: 32, title: '日傘の寿命は意外と短い?UVカット率が落ちるサインと買い替え時', cool: 4, month: 4, tantouD: '金澤', writer: '石澤', kosei: '安保', done: true },
-      { id: 34, title: '20年前のエアコン、壊れていなくても買い替えた方がいい?エアコンのお得な買い替えタイミングとは', cool: 4, month: 4, tantouD: '金澤', writer: '山本', kosei: '懸谷', done: false, doneSteps: [0,1] },
-      { id: 36, title: '入院で「個室」を希望した場合、「大部屋」との費用の違いはどのくらい?', cool: 4, month: 4, tantouD: '金澤', writer: '小川', kosei: '中村', done: false },
-      { id: 38, title: '"小銭"から"お札"への両替、お得にできる方法は?', cool: 4, month: 4, tantouD: '金澤', writer: '小川', kosei: '高田', done: true },
-      { id: 40, title: '役目を終えたランドセル。再利用やおすすめのリメイクを紹介!', cool: 4, month: 4, tantouD: '金澤', writer: '冨田', kosei: '國安', done: false },
+      { id: 30, title: '憧れの"キャンピングカー"生活！1ヶ月夫婦2人での生活費はどのくらい？', cool: 3, month: 4, tantouD: '金澤', writer: '小川', kosei: '勝矢', done: false, doneSteps: [] },
+      { id: 32, title: '日傘の寿命は意外と短い？UVカット率が落ちるサインと買い替え時', cool: 4, month: 4, tantouD: '金澤', writer: '石澤', kosei: '安保', done: true },
+      { id: 34, title: '20年前のエアコン、壊れていなくても買い替えた方がいい？エアコンのお得な買い替えタイミングとは', cool: 4, month: 4, tantouD: '金澤', writer: '山本', kosei: '懸谷', done: false, doneSteps: [0,1] },
+      { id: 36, title: '入院で「個室」を希望した場合、「大部屋」との費用の違いはどのくらい？', cool: 4, month: 4, tantouD: '金澤', writer: '小川', kosei: '中村', done: false },
+      { id: 38, title: '"小銭"から"お札"への両替、お得にできる方法は？', cool: 4, month: 4, tantouD: '金澤', writer: '小川', kosei: '高田', done: true },
+      { id: 40, title: '役目を終えたランドセル。再利用やおすすめのリメイクを紹介！', cool: 4, month: 4, tantouD: '金澤', writer: '冨田', kosei: '國安', done: false },
       { id: 42, title: '実は捨てると損⁉家庭ごみ〇選', cool: 4, month: 4, tantouD: '金澤', writer: '北村', kosei: '池山', done: false, doneSteps: [0,1] },
-      { id: 43, title: '今さら聞けない"白だし"と"めんつゆ"の違いって?', cool: 4, month: 4, tantouD: '金澤', writer: '小川', kosei: '高田', done: false },
+      { id: 43, title: '今さら聞けない"白だし"と"めんつゆ"の違いって？', cool: 4, month: 4, tantouD: '金澤', writer: '小川', kosei: '高田', done: false },
     ],
   },
   'boundary': {
@@ -494,27 +525,27 @@ const CLIENTS = {
     coolColor: (c) => c === 1 ? '#2563EB' : '#D97706',
     defaultArticles: [
       // 4/20納品グループ
-      { id: 46,  title: '私立高校無償化を利用しますが「立て替え払い」が必要と聞きました。授業料などにあたる部分は、直接振り込まれるわけではないのでしょうか?', cool: 1, month: 4, tantouD: '金澤', writer: '中村', done: false },
-      { id: 49,  title: '16歳の息子が電動キックボードで一時停止を無視して警察に止められた…!高校生でも「5000円」の罰金を払わなければならないの?', cool: 1, month: 4, tantouD: '金澤', writer: '鈴木', memo: '武井さん校正中・4/12戻り予定', doneSteps: [0, 1, 2], done: false },
-      { id: 52,  title: '1ヶ月の入院で母が「個室」を希望。費用は私が支払う予定ですが、「大部屋」との差額はどのくらいなんでしょうか?', cool: 1, month: 4, tantouD: '金澤', writer: '中村', done: false },
-      { id: 53,  title: '生活保護を受けている55歳の兄。老後このままでも「年金」は受給できるのでしょうか?', cool: 1, month: 4, tantouD: '金澤', writer: '中村', done: false },
-      { id: 70,  title: '毎日洗濯を「すすぎ2回」でしています。「1回」の場合と、水道代は1ヶ月でどれくらい変わりますか?', cool: 1, month: 4, tantouD: '金澤', writer: '中村', doneSteps: [0], done: false },
-      { id: 71,  title: '毎日弁当持参で頑張っていますが、これだけ食材が高騰するならコンビニ弁当の方がコスパがよかったりしますか…?', cool: 1, month: 4, tantouD: '金澤', writer: '中村', doneSteps: [0], done: false },
-      { id: 72,  title: '「節約のため」と月1万円でジム通いをする一人暮らしの息子。シャワーが会費に含まれているそうですが、自宅で入るのに比べ実際に1ヶ月でいくら節約になっていますか?', cool: 1, month: 4, tantouD: '金澤', writer: '中村', doneSteps: [0], done: false },
-      { id: 86,  title: '子どもの小学校入学祝いに、実家の両親から「100万円」の振り込みがありました。教育資金も含まれていますが、税金はかかるのでしょうか?', cool: 1, month: 4, tantouD: '金澤', writer: '中村', done: false },
-      { id: 112, title: '「税理士」と「社労士」、年収が高いのはどちら? 仕事内容や資格取得までの期間についても解説', cool: 1, month: 4, tantouD: '金澤', writer: '永井', done: false },
-      { id: 114, title: '「医師」と「薬剤師」、年収の違いはどれくらい?専門医ごとに年収は違う?', cool: 1, month: 4, tantouD: '金澤', writer: '永井', done: false },
+      { id: 46,  title: '私立高校無償化を利用しますが「立て替え払い」が必要と聞きました。授業料などにあたる部分は、直接振り込まれるわけではないのでしょうか？', cool: 1, month: 4, tantouD: '金澤', writer: '中村', done: false },
+      { id: 49,  title: '16歳の息子が電動キックボードで一時停止を無視して警察に止められた…！高校生でも「5000円」の罰金を払わなければならないの？', cool: 1, month: 4, tantouD: '金澤', writer: '鈴木', memo: '武井さん校正中・4/12戻り予定', doneSteps: [0, 1, 2], done: false },
+      { id: 52,  title: '1ヶ月の入院で母が「個室」を希望。費用は私が支払う予定ですが、「大部屋」との差額はどのくらいなんでしょうか？', cool: 1, month: 4, tantouD: '金澤', writer: '中村', done: false },
+      { id: 53,  title: '生活保護を受けている55歳の兄。老後このままでも「年金」は受給できるのでしょうか？', cool: 1, month: 4, tantouD: '金澤', writer: '中村', done: false },
+      { id: 70,  title: '毎日洗濯を「すすぎ2回」でしています。「1回」の場合と、水道代は1ヶ月でどれくらい変わりますか？', cool: 1, month: 4, tantouD: '金澤', writer: '中村', doneSteps: [0], done: false },
+      { id: 71,  title: '毎日弁当持参で頑張っていますが、これだけ食材が高騰するならコンビニ弁当の方がコスパがよかったりしますか…？', cool: 1, month: 4, tantouD: '金澤', writer: '中村', doneSteps: [0], done: false },
+      { id: 72,  title: '「節約のため」と月1万円でジム通いをする一人暮らしの息子。シャワーが会費に含まれているそうですが、自宅で入るのに比べ実際に1ヶ月でいくら節約になっていますか？', cool: 1, month: 4, tantouD: '金澤', writer: '中村', doneSteps: [0], done: false },
+      { id: 86,  title: '子どもの小学校入学祝いに、実家の両親から「100万円」の振り込みがありました。教育資金も含まれていますが、税金はかかるのでしょうか？', cool: 1, month: 4, tantouD: '金澤', writer: '中村', done: false },
+      { id: 112, title: '「税理士」と「社労士」、年収が高いのはどちら？ 仕事内容や資格取得までの期間についても解説', cool: 1, month: 4, tantouD: '金澤', writer: '永井', done: false },
+      { id: 114, title: '「医師」と「薬剤師」、年収の違いはどれくらい？専門医ごとに年収は違う？', cool: 1, month: 4, tantouD: '金澤', writer: '永井', done: false },
       // 4/27納品グループ
-      { id: 55,  title: '姪の入学祝いで「10万円」渡したら、「あげすぎ」と友人から言われました。相場はいくらくらい? 現金以外を贈るケースもあるのでしょうか?', cool: 2, month: 4, tantouD: '金澤', writer: '中村', done: false },
-      { id: 60,  title: '親戚からの大学入学祝い「10万円」は誰のもの? 親が学費に充てるのは一般的なのでしょうか?', cool: 2, month: 4, tantouD: '金澤', writer: '中村', done: false },
-      { id: 73,  title: '花粉対策でほぼ毎日"浴室乾燥"を2時間使っています。1ヶ月の電気代はいくらかかっていますか?', cool: 2, month: 4, tantouD: '金澤', writer: '中村', done: false },
-      { id: 87,  title: 'この4月で「75歳」に。病院の窓口負担が「1割」から「2割」に上がる基準は何ですか?', cool: 2, month: 4, tantouD: '金澤', writer: '佐川', done: false },
-      { id: 92,  title: '【子ども・子育て支援金】独身会社員の私は毎月「700円」上乗せされるようです。「月500円程度」の負担と聞いていたのに、なぜでしょうか?', cool: 2, month: 4, tantouD: '金澤', writer: '佐川', done: false },
-      { id: 95,  title: '4月から一人暮らしを始めましたが、テレビはありません。「NHK」の契約は不要ですよね?', cool: 2, month: 4, tantouD: '金澤', writer: '中村', done: false },
-      { id: 98,  title: '30代・無職の息子と同居しています。年金暮らしなので養うのに困窮しています…。生活保護を受けさせた方がよいですか?', cool: 2, month: 4, tantouD: '金澤', writer: '中村', done: false },
-      { id: 116, title: '繁忙期を終えたばかりの「国税専門官」。年収はどのくらい?', cool: 2, month: 4, tantouD: '金澤', writer: '永井', done: false },
-      { id: 118, title: '薬剤師の娘が、薬局勤務か病院勤務かで迷っています。仕事内容や年収の違いはありますか?', cool: 2, month: 4, tantouD: '金澤', writer: '永井', done: false },
-      { id: 119, title: '娘の結婚相手は「大学病院の勤務医」だそうです。「開業医」と比べて年収はどのくらい違うのでしょうか?', cool: 2, month: 4, tantouD: '金澤', writer: '永井', done: false },
+      { id: 55,  title: '姪の入学祝いで「10万円」渡したら、「あげすぎ」と友人から言われました。相場はいくらくらい？ 現金以外を贈るケースもあるのでしょうか？', cool: 2, month: 4, tantouD: '金澤', writer: '中村', done: false },
+      { id: 60,  title: '親戚からの大学入学祝い「10万円」は誰のもの？ 親が学費に充てるのは一般的なのでしょうか？', cool: 2, month: 4, tantouD: '金澤', writer: '中村', done: false },
+      { id: 73,  title: '花粉対策でほぼ毎日"浴室乾燥"を2時間使っています。1ヶ月の電気代はいくらかかっていますか？', cool: 2, month: 4, tantouD: '金澤', writer: '中村', done: false },
+      { id: 87,  title: 'この4月で「75歳」に。病院の窓口負担が「1割」から「2割」に上がる基準は何ですか？', cool: 2, month: 4, tantouD: '金澤', writer: '佐川', done: false },
+      { id: 92,  title: '【子ども・子育て支援金】独身会社員の私は毎月「700円」上乗せされるようです。「月500円程度」の負担と聞いていたのに、なぜでしょうか？', cool: 2, month: 4, tantouD: '金澤', writer: '佐川', done: false },
+      { id: 95,  title: '4月から一人暮らしを始めましたが、テレビはありません。「NHK」の契約は不要ですよね？', cool: 2, month: 4, tantouD: '金澤', writer: '中村', done: false },
+      { id: 98,  title: '30代・無職の息子と同居しています。年金暮らしなので養うのに困窮しています…。生活保護を受けさせた方がよいですか？', cool: 2, month: 4, tantouD: '金澤', writer: '中村', done: false },
+      { id: 116, title: '繁忙期を終えたばかりの「国税専門官」。年収はどのくらい？', cool: 2, month: 4, tantouD: '金澤', writer: '永井', done: false },
+      { id: 118, title: '薬剤師の娘が、薬局勤務か病院勤務かで迷っています。仕事内容や年収の違いはありますか？', cool: 2, month: 4, tantouD: '金澤', writer: '永井', done: false },
+      { id: 119, title: '娘の結婚相手は「大学病院の勤務医」だそうです。「開業医」と比べて年収はどのくらい違うのでしょうか？', cool: 2, month: 4, tantouD: '金澤', writer: '永井', done: false },
     ],
   },
 };
@@ -544,6 +575,40 @@ Object.keys(CLIENTS).forEach(key => {
 // =============================================
 // LOCAL STORAGE
 // =============================================
+
+// =============================================
+// LOGIN
+// =============================================
+
+const AUTH_HASH = '69b71788942f739e32c3779cd47431432c23372587d114bf6794cae2d36c0475';
+
+async function hashString(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function doLogin() {
+  const id = document.getElementById('loginId').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const hash = await hashString(id + ':' + pass);
+  if (hash === AUTH_HASH) {
+    sessionStorage.setItem('auth', '1');
+    document.getElementById('loginOverlay').style.display = 'none';
+    startApp();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginPass').focus();
+  }
+}
+
+function checkAuth() {
+  if (sessionStorage.getItem('auth') === '1') {
+    document.getElementById('loginOverlay').style.display = 'none';
+    return true;
+  }
+  return false;
+}
 
 // =============================================
 // SUPABASE
@@ -602,7 +667,7 @@ async function loadFromCloud() {
 }
 
 function resetClientData() {
-  if (!confirm(`「${getClient().name}」のデータをリセットしますか?\nブラウザで変更した内容が消えます。`)) return;
+  if (!confirm(`「${getClient().name}」のデータをリセットしますか？\nブラウザで変更した内容が消えます。`)) return;
   const existingMemo = clientData[activeClientKey].memo || '';
   clientData[activeClientKey] = {
     schedule: JSON.parse(JSON.stringify(getClient().defaultSchedule)),
@@ -899,7 +964,7 @@ function renderDashboard() {
   }
 
   if (visibleArticles.length === 0) {
-    document.getElementById('articleStatusList').innerHTML = `<div class="empty">🎉 すべての記事が完了済みです!</div>`;
+    document.getElementById('articleStatusList').innerHTML = `<div class="empty">🎉 すべての記事が完了済みです！</div>`;
     return;
   }
 
@@ -1266,7 +1331,7 @@ function jumpToArticle(articleId) {
     hideDone = false;
     renderAll();
   }
-  // 該当記事にスクロール&ハイライト
+  // 該当記事にスクロール＆ハイライト
   setTimeout(() => {
     const el = document.getElementById(`article-item-${articleId}`);
     if (el) {
@@ -1342,7 +1407,7 @@ function addArticle() {
 
 function removeArticle(idx) {
   const articles = getArticles();
-  if (!confirm(`No.${articles[idx].id}「${articles[idx].title}」を削除しますか?`)) return;
+  if (!confirm(`No.${articles[idx].id}「${articles[idx].title}」を削除しますか？`)) return;
   articles.splice(idx, 1);
   saveToCloud();
   renderAll();
@@ -1410,13 +1475,13 @@ function saveSettings() {
     });
   });
   saveToCloud();
-  alert('スケジュールを保存しました!');
+  alert('スケジュールを保存しました！');
   renderDashboard();
   renderGantt();
 }
 
 function resetSettings() {
-  if (!confirm('スケジュールをデフォルトに戻しますか?')) return;
+  if (!confirm('スケジュールをデフォルトに戻しますか？')) return;
   const client = getClient();
   clientData[activeClientKey].schedule = JSON.parse(JSON.stringify(client.defaultSchedule));
   saveToCloud();
@@ -1446,7 +1511,7 @@ function importData(evt) {
       if (data.articles) clientData[activeClientKey].articles = data.articles;
       saveToCloud();
       renderAll();
-      alert('インポート完了!');
+      alert('インポート完了！');
     } catch {
       alert('JSONの読み込みに失敗しました');
     }
@@ -1482,11 +1547,14 @@ function renderAll() {
 // INIT
 // =============================================
 
-async function init() {
+async function startApp() {
   const days = ['日','月','火','水','木','金','土'];
   document.getElementById('todayLabel').textContent =
     `今日：${TODAY.getFullYear()}年${TODAY.getMonth()+1}月${TODAY.getDate()}日（${days[TODAY.getDay()]}）`;
   document.querySelector('.header').style.background = getClient().color;
+
+  // ローディング表示
+  document.getElementById('loadingOverlay').style.display = 'flex';
 
   // クラウドからデータ読み込み
   await loadFromCloud();
@@ -1497,7 +1565,10 @@ async function init() {
   renderDashboard();
 }
 
-init();
+// 起動：ログイン済みならそのままアプリへ
+if (checkAuth()) {
+  startApp();
+}
 </script>
 </body>
 </html>
