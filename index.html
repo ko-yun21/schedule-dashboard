@@ -920,7 +920,7 @@ function renderDashboard() {
       <div class="summary-num num-red">${overdueCount}</div><div class="summary-label">要確認 ${activeFilter==='overdue' ? '▼' : ''}</div>
     </div>
     ${doneCount > 0 ? `<div class="summary-box-done" onclick="setFilter('done')" style="${boxStyle('done')}" title="完了した記事のみ表示">
-      <span class="done-check">✅</span><span class="done-label">完了した記事${activeFilter==='done' ? ' ▼' : ''}</span>
+      <span class="done-label">完了した記事${activeFilter==='done' ? ' ▼' : ''}</span>
     </div>` : ''}
   `;
 
