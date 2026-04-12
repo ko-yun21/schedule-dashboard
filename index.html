@@ -47,10 +47,15 @@ body { font-family: 'Hiragino Sans', 'YuGothic', 'Yu Gothic UI', sans-serif; bac
 .card-title { font-size: 14px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
 
 /* Summary row */
-.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 8px; }
 .summary-box { background: white; border-radius: 10px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); text-align: center; }
 .summary-num { font-size: 28px; font-weight: 800; }
 .summary-label { font-size: 11px; color: var(--text-sub); margin-top: 3px; }
+.summary-box-done { background: white; border-radius: 8px; padding: 7px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin-bottom: 12px; border: 1px solid var(--border); font-size: 12px; color: var(--text-sub); transition: background 0.15s; }
+.summary-box-done:hover { background: #F9FAFB; }
+.done-check { font-size: 13px; }
+.done-label { font-size: 12px; color: var(--text-sub); }
+.done-count { font-weight: 700; color: var(--success); }
 .num-red { color: var(--danger); }
 .num-yellow { color: var(--warning); }
 .num-green { color: var(--success); }
@@ -173,8 +178,9 @@ input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px 
   /* Content */
   .content { padding: 10px 8px; overflow-x: hidden; }
 
-  /* Summary 2×2 */
-  .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+  /* Summary */
+  .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 6px; }
+  .summary-box-done { font-size: 11px; padding: 6px 12px; margin-bottom: 8px; }
   .summary-num { font-size: 22px; }
   .summary-label { font-size: 10px; }
 
@@ -907,15 +913,15 @@ function renderDashboard() {
     <div class="summary-box" onclick="setFilter(null)" style="${boxStyle(null)}" title="全件表示">
       <div class="summary-num num-blue">${total}</div><div class="summary-label">担当記事数</div>
     </div>
-    <div class="summary-box" onclick="setFilter('done')" style="${boxStyle('done')}" title="完了のみ表示">
-      <div class="summary-num num-green">${doneCount}</div><div class="summary-label">完了 ${activeFilter==='done' ? '▼' : ''}</div>
-    </div>
     <div class="summary-box" onclick="setFilter('soon')" style="${boxStyle('soon')}" title="期限が近い記事のみ表示">
       <div class="summary-num num-yellow">${soonCount}</div><div class="summary-label">期限が近い ${activeFilter==='soon' ? '▼' : ''}</div>
     </div>
     <div class="summary-box" onclick="setFilter('overdue')" style="${boxStyle('overdue')}" title="要確認の記事のみ表示">
       <div class="summary-num num-red">${overdueCount}</div><div class="summary-label">要確認 ${activeFilter==='overdue' ? '▼' : ''}</div>
     </div>
+    ${doneCount > 0 ? `<div class="summary-box-done" onclick="setFilter('done')" style="${boxStyle('done')}" title="完了した記事のみ表示">
+      <span class="done-check">✅</span><span class="done-label">完了した記事 <span class="done-count">${doneCount}本</span>${activeFilter==='done' ? ' ▼' : ''}</span>
+    </div>` : ''}
   `;
 
   let alertsHtml = '';
