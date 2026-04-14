@@ -27,9 +27,11 @@ body { font-family: 'Hiragino Sans', 'YuGothic', 'Yu Gothic UI', sans-serif; bac
 /* Client bar */
 .client-bar { background: #1E1B4B; display: flex; align-items: center; padding: 0 24px; gap: 4px; }
 .client-bar-label { font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 700; margin-right: 8px; letter-spacing: 0.5px; white-space: nowrap; }
-.client-btn { padding: 10px 20px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; color: rgba(255,255,255,0.55); background: transparent; border-bottom: 3px solid transparent; margin-bottom: 0; transition: all 0.15s; font-family: inherit; letter-spacing: 0.2px; }
+.client-btn { padding: 10px 20px; font-size: 13px; font-weight: 700; border: none; cursor: grab; color: rgba(255,255,255,0.55); background: transparent; border-bottom: 3px solid transparent; margin-bottom: 0; transition: all 0.15s; font-family: inherit; letter-spacing: 0.2px; user-select: none; }
 .client-btn:hover { color: white; background: rgba(255,255,255,0.07); }
 .client-btn.active { color: white; border-bottom-color: white; background: rgba(255,255,255,0.1); }
+.client-btn.dragging { opacity: 0.4; cursor: grabbing; }
+.client-btn.drag-over { background: rgba(255,255,255,0.2); border-bottom-color: rgba(255,255,255,0.5); }
 
 /* Tabs */
 .tabs { background: white; border-bottom: 2px solid var(--border); padding: 0 24px; display: flex; }
@@ -326,9 +328,9 @@ input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px 
 
 <div class="client-bar" id="clientBar">
   <span class="client-bar-label">案件：</span>
-  <button class="client-btn active" data-key="grape"     onclick="switchClient('grape')">🍇 grape様</button>
-  <button class="client-btn"        data-key="breik"     onclick="switchClient('breik')">⚡ ブレイク様</button>
-  <button class="client-btn"        data-key="boundary"  onclick="switchClient('boundary')">🔵 バウンダリ様</button>
+  <button class="client-btn active" draggable="true" data-key="grape"     onclick="switchClient('grape')">🍇 grape様</button>
+  <button class="client-btn"        draggable="true" data-key="breik"     onclick="switchClient('breik')">⚡ ブレイク様</button>
+  <button class="client-btn"        draggable="true" data-key="boundary"  onclick="switchClient('boundary')">🔵 バウンダリ様</button>
 </div>
 
 <div class="tabs">
@@ -1620,6 +1622,61 @@ function renderAll() {
 // INIT
 // =============================================
 
+function initClientDrag() {
+  const bar = document.getElementById('clientBar');
+  let dragSrc = null;
+
+  bar.querySelectorAll('.client-btn').forEach(btn => {
+    btn.addEventListener('dragstart', e => {
+      dragSrc = btn;
+      btn.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    btn.addEventListener('dragend', () => {
+      btn.classList.remove('dragging');
+      bar.querySelectorAll('.client-btn').forEach(b => b.classList.remove('drag-over'));
+      // 並び順を保存
+      const order = [...bar.querySelectorAll('.client-btn')].map(b => b.dataset.key);
+      localStorage.setItem('clientOrder', JSON.stringify(order));
+    });
+    btn.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    btn.addEventListener('dragenter', e => {
+      e.preventDefault();
+      if (btn !== dragSrc) btn.classList.add('drag-over');
+    });
+    btn.addEventListener('dragleave', () => btn.classList.remove('drag-over'));
+    btn.addEventListener('drop', e => {
+      e.preventDefault();
+      if (dragSrc && dragSrc !== btn) {
+        // ドロップ先の前に挿入
+        const btns = [...bar.querySelectorAll('.client-btn')];
+        const srcIdx = btns.indexOf(dragSrc);
+        const dstIdx = btns.indexOf(btn);
+        if (srcIdx < dstIdx) {
+          btn.after(dragSrc);
+        } else {
+          btn.before(dragSrc);
+        }
+      }
+      btn.classList.remove('drag-over');
+    });
+  });
+
+  // 保存済み順序を適用
+  try {
+    const saved = JSON.parse(localStorage.getItem('clientOrder') || '[]');
+    if (saved.length > 0) {
+      saved.forEach(key => {
+        const btn = bar.querySelector(`[data-key="${key}"]`);
+        if (btn) bar.appendChild(btn);
+      });
+    }
+  } catch(e) {}
+}
+
 async function startApp() {
   const days = ['日','月','火','水','木','金','土'];
   document.getElementById('todayLabel').textContent =
@@ -1635,6 +1692,7 @@ async function startApp() {
   // ローディング非表示
   document.getElementById('loadingOverlay').style.display = 'none';
 
+  initClientDrag();
   renderDashboard();
 }
 
