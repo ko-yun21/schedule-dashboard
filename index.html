@@ -1035,7 +1035,7 @@ function renderDashboard() {
     let receivedHtml = '';
 
     const bs = a.ballState || null;
-    const STATUS_TAGS = ['構成案きてる', '初稿依頼済み', '初稿きてる', '校正中', '納品'];
+    const STATUS_TAGS = ['構成案きてる', '初稿依頼済み', '初稿きてる', '校正中', '次は納品'];
     const ballHtml = !a.done ? `
       <div class="status-tags">
         ${STATUS_TAGS.map(tag => `<span class="status-tag${bs===tag ? ' st-active' : ''}" onclick="setBallState(${idx}, '${tag}')">${tag}</span>`).join('')}
