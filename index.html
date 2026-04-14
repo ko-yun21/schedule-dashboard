@@ -90,6 +90,16 @@ body { font-family: 'Hiragino Sans', 'YuGothic', 'Yu Gothic UI', sans-serif; bac
 .badge-soon { background: #DBEAFE; color: #1E40AF; }
 .badge-pending { background: #F3F4F6; color: var(--text-sub); }
 
+/* Ball state */
+.ball-row { display:flex; gap:5px; margin-top:7px; flex-wrap:wrap; }
+.ball-btn { font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; border:1.5px solid transparent; cursor:pointer; transition:all 0.15s; background:white; white-space:nowrap; }
+.ball-btn-received { border-color:#6EE7B7; color:#065F46; }
+.ball-btn-received.active { background:#D1FAE5; border-color:#10B981; color:#065F46; }
+.ball-btn-holding { border-color:#FCD34D; color:#92400E; }
+.ball-btn-holding.active { background:#FEF3C7; border-color:#F59E0B; color:#92400E; }
+.ball-btn-sent { border-color:#C4B5FD; color:#5B21B6; }
+.ball-btn-sent.active { background:#EDE9FE; border-color:#7C3AED; color:#5B21B6; }
+
 /* Progress dots */
 .step-dots { display: flex; gap: 2px; margin-top: 5px; flex-wrap: wrap; }
 .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
@@ -1028,6 +1038,14 @@ function renderDashboard() {
 
     let receivedHtml = '';
 
+    const bs = a.ballState || null;
+    const ballHtml = !a.done ? `
+      <div class="ball-row">
+        <button class="ball-btn ball-btn-received${bs==='received' ? ' active' : ''}" onclick="setBallState(${idx}, 'received')">📩 ライター→私</button>
+        <button class="ball-btn ball-btn-holding${bs==='holding' ? ' active' : ''}" onclick="setBallState(${idx}, 'holding')">🙋 私が持ち中</button>
+        <button class="ball-btn ball-btn-sent${bs==='sent' ? ' active' : ''}" onclick="setBallState(${idx}, 'sent')">📤 私→相手待ち</button>
+      </div>` : '';
+
     listHtml += `
       <div class="article-item" id="article-item-${a.id}" style="position:relative; ${a.done ? 'opacity:0.45; filter:grayscale(0.8); background:#F3F4F6;' : ''}">
         ${a.month ? `<span style="position:absolute; top:0; left:0; font-size:10px; font-weight:800; color:white; background:${a.month === 4 ? '#F59E0B' : '#8B5CF6'}; padding:1px 7px; border-radius:8px 0 6px 0; line-height:1.8;">${a.month}月</span>` : ''}
@@ -1042,6 +1060,7 @@ function renderDashboard() {
             ${a.kosei ? `<span style="flex-shrink:0; font-size:11px; color:white; background:#7C3AED; padding:1px 7px; border-radius:10px; font-weight:700;">校正者：${a.kosei}さん</span>` : ''}
           </div>
           ${receivedHtml}
+          ${ballHtml}
           <div class="step-btns" style="display:flex; flex-direction:row; flex-wrap:wrap; gap:6px; margin-top:6px;">
             ${client.steps.map((step, si) => {
               const isDone = (a.doneSteps||[]).includes(si);
@@ -1506,6 +1525,18 @@ function toggleDone(idx, val) {
   saveToCloud();
   renderDashboard();
   renderGantt();
+}
+
+function setBallState(idx, state) {
+  const articles = getArticles();
+  // 同じ状態をもう一度押したらリセット
+  if (articles[idx].ballState === state) {
+    articles[idx].ballState = null;
+  } else {
+    articles[idx].ballState = state;
+  }
+  saveToCloud();
+  renderDashboard();
 }
 
 function saveSettings() {
