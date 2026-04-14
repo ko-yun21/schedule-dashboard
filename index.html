@@ -90,12 +90,11 @@ body { font-family: 'Hiragino Sans', 'YuGothic', 'Yu Gothic UI', sans-serif; bac
 .badge-soon { background: #DBEAFE; color: #1E40AF; }
 .badge-pending { background: #F3F4F6; color: var(--text-sub); }
 
-/* Ball flow bar */
-.ball-flow { display:flex; align-items:center; gap:4px; margin-top:7px; flex-wrap:wrap; }
-.bf-node { font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; border:1.5px solid #E5E7EB; background:white; color:#9CA3AF; cursor:pointer; transition:all 0.15s; white-space:nowrap; }
-.bf-node:hover { border-color:#C4B5FD; color:#5B21B6; }
-.bf-node.bf-active { background:#EDE9FE; border-color:#7C3AED; color:#5B21B6; font-weight:800; }
-.bf-arrow { font-size:11px; color:#D1D5DB; flex-shrink:0; }
+/* Status tags */
+.status-tags { display:flex; gap:5px; margin-top:7px; flex-wrap:wrap; }
+.status-tag { font-size:11px; font-weight:700; padding:3px 11px; border-radius:20px; border:1.5px solid #E5E7EB; background:white; color:#9CA3AF; cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+.status-tag:hover { border-color:#A5B4FC; color:#4338CA; }
+.status-tag.st-active { background:#EEF2FF; border-color:#6366F1; color:#4338CA; font-weight:800; }
 
 /* Progress dots */
 .step-dots { display: flex; gap: 2px; margin-top: 5px; flex-wrap: wrap; }
@@ -1036,15 +1035,10 @@ function renderDashboard() {
     let receivedHtml = '';
 
     const bs = a.ballState || null;
-    const writerName = a.writer ? a.writer + 'さん' : 'ライター';
-    const koseiName = a.kosei ? a.kosei + 'さん' : '校正者';
+    const STATUS_TAGS = ['構成案きてる', '初稿依頼済み', '初稿きてる', '校正中', '納品'];
     const ballHtml = !a.done ? `
-      <div class="ball-flow">
-        <span class="bf-node${bs==='writer' ? ' bf-active' : ''}" onclick="setBallState(${idx}, 'writer')">${writerName}</span>
-        <span class="bf-arrow">→</span>
-        <span class="bf-node${bs==='me' ? ' bf-active' : ''}" onclick="setBallState(${idx}, 'me')">私</span>
-        <span class="bf-arrow">→</span>
-        <span class="bf-node${bs==='proofreader' ? ' bf-active' : ''}" onclick="setBallState(${idx}, 'proofreader')">${koseiName}</span>
+      <div class="status-tags">
+        ${STATUS_TAGS.map(tag => `<span class="status-tag${bs===tag ? ' st-active' : ''}" onclick="setBallState(${idx}, '${tag}')">${tag}</span>`).join('')}
       </div>` : '';
 
     listHtml += `
