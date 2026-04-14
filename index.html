@@ -996,7 +996,7 @@ function renderDashboard() {
       </div>` : '';
 
     listHtml += `
-      <div class="article-item" id="article-item-${a.id}" style="position:relative; ${a.done ? 'opacity:0.45; filter:grayscale(0.8); background:#F3F4F6;' : s.badge==='badge-overdue' ? 'border:2px solid #EF4444; background:#FFF5F5;' : ''}">
+      <div class="article-item" id="article-item-${a.id}" style="position:relative; ${a.done ? 'opacity:0.45; filter:grayscale(0.8); background:#F3F4F6;' : s.badge==='badge-overdue' ? 'border:2px solid #EF4444; background:#FFF5F5;' : s.badge==='badge-soon' ? 'border:2px solid #F59E0B; background:#FFFBEB;' : ''}">
         ${a.month ? `<span style="position:absolute; top:0; left:0; font-size:10px; font-weight:800; color:white; background:${a.month === 4 ? '#F59E0B' : '#8B5CF6'}; padding:1px 7px; border-radius:8px 0 6px 0; line-height:1.8;">${a.month}月</span>` : ''}
         <div class="art-cool-col" style="display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; width:28px;">
           ${a.cool ? `<span style="font-size:13px; color:${client.coolColor(a.cool)}; font-weight:700; line-height:1; text-align:center;">${client.coolLabel(a.cool)}</span>` : ''}
