@@ -90,15 +90,12 @@ body { font-family: 'Hiragino Sans', 'YuGothic', 'Yu Gothic UI', sans-serif; bac
 .badge-soon { background: #DBEAFE; color: #1E40AF; }
 .badge-pending { background: #F3F4F6; color: var(--text-sub); }
 
-/* Ball state */
-.ball-row { display:flex; gap:5px; margin-top:7px; flex-wrap:wrap; }
-.ball-btn { font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; border:1.5px solid transparent; cursor:pointer; transition:all 0.15s; background:white; white-space:nowrap; }
-.ball-btn-received { border-color:#6EE7B7; color:#065F46; }
-.ball-btn-received.active { background:#D1FAE5; border-color:#10B981; color:#065F46; }
-.ball-btn-holding { border-color:#FCD34D; color:#92400E; }
-.ball-btn-holding.active { background:#FEF3C7; border-color:#F59E0B; color:#92400E; }
-.ball-btn-sent { border-color:#C4B5FD; color:#5B21B6; }
-.ball-btn-sent.active { background:#EDE9FE; border-color:#7C3AED; color:#5B21B6; }
+/* Ball flow bar */
+.ball-flow { display:flex; align-items:center; gap:4px; margin-top:7px; flex-wrap:wrap; }
+.bf-node { font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; border:1.5px solid #E5E7EB; background:white; color:#9CA3AF; cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+.bf-node:hover { border-color:#C4B5FD; color:#5B21B6; }
+.bf-node.bf-active { background:#EDE9FE; border-color:#7C3AED; color:#5B21B6; font-weight:800; }
+.bf-arrow { font-size:11px; color:#D1D5DB; flex-shrink:0; }
 
 /* Progress dots */
 .step-dots { display: flex; gap: 2px; margin-top: 5px; flex-wrap: wrap; }
@@ -1039,11 +1036,15 @@ function renderDashboard() {
     let receivedHtml = '';
 
     const bs = a.ballState || null;
+    const writerName = a.writer ? a.writer + 'さん' : 'ライター';
+    const koseiName = a.kosei ? a.kosei + 'さん' : '校正者';
     const ballHtml = !a.done ? `
-      <div class="ball-row">
-        <button class="ball-btn ball-btn-received${bs==='received' ? ' active' : ''}" onclick="setBallState(${idx}, 'received')">📩 ライター→私</button>
-        <button class="ball-btn ball-btn-holding${bs==='holding' ? ' active' : ''}" onclick="setBallState(${idx}, 'holding')">🙋 私が持ち中</button>
-        <button class="ball-btn ball-btn-sent${bs==='sent' ? ' active' : ''}" onclick="setBallState(${idx}, 'sent')">📤 私→相手待ち</button>
+      <div class="ball-flow">
+        <span class="bf-node${bs==='writer' ? ' bf-active' : ''}" onclick="setBallState(${idx}, 'writer')">${writerName}</span>
+        <span class="bf-arrow">→</span>
+        <span class="bf-node${bs==='me' ? ' bf-active' : ''}" onclick="setBallState(${idx}, 'me')">私</span>
+        <span class="bf-arrow">→</span>
+        <span class="bf-node${bs==='proofreader' ? ' bf-active' : ''}" onclick="setBallState(${idx}, 'proofreader')">${koseiName}</span>
       </div>` : '';
 
     listHtml += `
@@ -1529,12 +1530,8 @@ function toggleDone(idx, val) {
 
 function setBallState(idx, state) {
   const articles = getArticles();
-  // 同じ状態をもう一度押したらリセット
-  if (articles[idx].ballState === state) {
-    articles[idx].ballState = null;
-  } else {
-    articles[idx].ballState = state;
-  }
+  // 同じノードをもう一度押したらリセット
+  articles[idx].ballState = (articles[idx].ballState === state) ? null : state;
   saveToCloud();
   renderDashboard();
 }
